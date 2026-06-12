@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApiKey } from '../context/ApiKeyContext';
 
@@ -27,6 +27,12 @@ const Dashboard = () => {
           <div className="card-icon">🛠️</div>
           <h2>Herramienta IA</h2>
           <p>Acceso directo al motor WaveSpeed para texturización y edición avanzada.</p>
+        </div>
+
+        <div className="op-card glass-panel" onClick={() => navigate('/resumen')}>
+          <div className="card-icon">📊</div>
+          <h2>Resumen</h2>
+          <p>Análisis del censo de videos, distribución por especie, mapas y aspectos técnicos.</p>
         </div>
       </div>
 
