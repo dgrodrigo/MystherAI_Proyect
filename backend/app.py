@@ -1,8 +1,9 @@
 ﻿import os, requests, wavespeed, gradio as gr, re
 from dotenv import load_dotenv
 
-MY_KEY = "dd196208318710edede5cd994e7c4be8d51ee994fe1e49fbdd5295b417d6a50d"
-cl = wavespeed.Client(api_key=MY_KEY)
+MY_KEY = "wsk_live_jotbLBG3MeaiXaTNBg5adM0tL6SeS2SAzPwDx3-sB2s".strip()
+os.environ["WAVESPEED_API_KEY"] = MY_KEY  # <--- AÑADE ESTA LÍNEA
+cl = wavespeed.Client(api_key=os.environ["WAVESPEED_API_KEY"])
 
 def registrar_en_web(v_id, user, link, p_img, p_vid, estilo, resp, orig):
     payload = {

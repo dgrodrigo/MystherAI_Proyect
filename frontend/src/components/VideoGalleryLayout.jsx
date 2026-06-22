@@ -47,12 +47,12 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
   }, [tipo, search, filters]);
 
   // Carga opciones de filtro al inicio
-  useEffect(() => {
+  useEffect(() => { api.get(`/sheets/filter-options/?tipo=${tipo}`).then(res => setFilterOptions(res.data)); api.get(`/sheets/filter-options/?tipo=${tipo}`).then(res => setFilterOptions(res.data));
     api.get(`/sheets/filter-options/?tipo=${tipo}`).then(res => setFilterOptions(res.data)).catch(err => console.error("Error fetching filter options:", err));
   }, [tipo]);
 
   // Dispara la búsqueda al cambiar filtros o tipo (efecto separado)
-  useEffect(() => {
+  useEffect(() => { api.get(`/sheets/filter-options/?tipo=${tipo}`).then(res => setFilterOptions(res.data)); api.get(`/sheets/filter-options/?tipo=${tipo}`).then(res => setFilterOptions(res.data));
     fetchVideos();
   }, [filters, fetchVideos]);
 
@@ -97,7 +97,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
 
   return (
     <div className="gallery-page-centered">
-      <button className="back-home-btn fixed-btn" onClick={() => navigate('/dashboard')}>⬅ INICIO</button>
+      <button className="back-home-btn fixed-btn" onClick={() => navigate('/dashboard')}>? INICIO</button>
       
       <header className="control-header glass-panel">
         <h1 className="page-title-center">{titulo}</h1>
@@ -111,7 +111,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
             className="glass-input main-search"
           />
           <button onClick={fetchVideos} className="neon-button">BUSCAR</button>
-          {isAdmin && <button onClick={() => { setFormData({}); setShowAddForm(true); }} className="neon-button add-btn">+ AÑADIR NUEVO</button>}
+          {isAdmin && <button onClick={() => { setFormData({}); setShowAddForm(true); }} className="neon-button add-btn">+ ANADIR NUEVO</button>}
         </div>
         
         <div className="advanced-filters-center">
@@ -140,11 +140,11 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                   className="yt-thumbnail" 
                   style={{ backgroundImage: `url(${getThumbnailUrl(v.drive_link)})` }}
                 >
-                  <div className="play-btn">▶</div>
+                  <div className="play-btn">?</div>
                 </div>
                 <div className="yt-info">
                   <h3 className="yt-title" style={{color: 'var(--neon-cyan)'}}>ID: {v.video_id || 'Desconocido'}</h3>
-                  <p className="yt-meta">{v.usuario || 'Anónimo'} • {v.estilizado || v.mapa || 'Sin Categoría'}</p>
+                  <p className="yt-meta">{v.usuario || 'Anónimo'} - {v.estilizado || v.mapa || 'Sin Categoría'}</p>
                 </div>
               </div>
             ))
@@ -152,12 +152,12 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
         </div>
       </main>
 
-      {/* MODAL PARA AÑADIR NUEVO VIDEO */}
+      {/* MODAL PARA ANADIR NUEVO VIDEO */}
       {showAddForm && (
         <div className="netflix-modal-overlay">
           <form className="netflix-modal-window glass-panel add-form" onSubmit={handleSave} style={{maxWidth: '800px', margin: 'auto'}}>
             <button type="button" className="close-modal" onClick={() => setShowAddForm(false)}>×</button>
-            <h2 className="neon-title" style={{textAlign:'center'}}>AÑADIR A {tipo.toUpperCase()}</h2>
+            <h2 className="neon-title" style={{textAlign:'center'}}>ANADIR A {tipo.toUpperCase()}</h2>
             <div className="form-grid">
                 <input required placeholder="ID Video" value={formData.video_id || ''} onChange={e => setFormData({...formData, video_id: e.target.value})} />
                 <select required value={formData.usuario || ''} onChange={e => setFormData({...formData, usuario: e.target.value})}>
@@ -212,7 +212,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
               ) : (
                 <div className="modal-player-placeholder">
                    <p>El enlace ingresado no contiene un ID válido de Google Drive o el archivo no está público.</p>
-                   {selectedVideo.drive_link && <button onClick={() => window.open(selectedVideo.drive_link, '_blank')} className="neon-button" style={{marginTop:'10px'}}>ABRIR LINK ORIGINAL ↗</button>}
+                   {selectedVideo.drive_link && <button onClick={() => window.open(selectedVideo.drive_link, '_blank')} className="neon-button" style={{marginTop:'10px'}}>ABRIR LINK ORIGINAL ?</button>}
                 </div>
               )}
             </div>
@@ -222,8 +222,8 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                  <h2 className="neon-cyan-text" style={{marginRight:'auto', margin:0}}>
                     {selectedVideo.tipo === 'registro' ? 'REGISTRO:' : 'CENSO:'} {selectedVideo.video_id}
                  </h2>
-                 {isAdmin && !isEditingInside && <button className="neon-button" style={{borderColor:'orange', color:'orange', padding:'5px 15px'}} onClick={() => startEdit(selectedVideo)}>EDITAR ✎</button>}
-                 {isAdmin && !isEditingInside && <button className="logout-btn" style={{padding:'5px 15px', margin:0}} onClick={() => handleDelete(selectedVideo.id)}>BORRAR 🗑</button>}
+                 {isAdmin && !isEditingInside && <button className="neon-button" style={{borderColor:'orange', color:'orange', padding:'5px 15px'}} onClick={() => startEdit(selectedVideo)}>EDITAR ?</button>}
+                 {isAdmin && !isEditingInside && <button className="logout-btn" style={{padding:'5px 15px', margin:0}} onClick={() => handleDelete(selectedVideo.id)}>BORRAR ??</button>}
               </div>
 
               {isEditingInside ? (
@@ -281,7 +281,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                             {extractDriveID(selectedVideo.imagen_link) ? (
                               <img src={getThumbnailUrl(selectedVideo.imagen_link)} className="img-preview" alt="Ref" />
                             ) : (
-                              <button onClick={() => window.open(selectedVideo.imagen_link, '_blank')} className="neon-button neon-link-btn">Ver Link Externo ↗</button>
+                              <button onClick={() => window.open(selectedVideo.imagen_link, '_blank')} className="neon-button neon-link-btn">Ver Link Externo ?</button>
                             )}
                           </div>
                         )}
@@ -292,7 +292,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                         {selectedVideo.video_original_link && (
                           <div className="detail-section">
                             <label>VIDEO ORIGINAL</label><br/>
-                            <button onClick={() => handleOpenOriginalVideoRegistro(selectedVideo.video_original_link)} className="neon-button neon-link-btn">ABRIR VIDEO ORIGINAL ↗</button>
+                            <button onClick={() => handleOpenOriginalVideoRegistro(selectedVideo.video_original_link)} className="neon-button neon-link-btn">ABRIR VIDEO ORIGINAL ?</button>
                           </div>
                         )}
                       </>

@@ -1,0 +1,6 @@
+﻿
+# CAMPOS GLOBALES PARA AUTO-GUARDADO (agregar antes de la Pestaña 6)
+g_video_id = gr.State('')
+g_usuario = gr.State('Mateo')
+g_responsable = gr.State('Mateo')
+g_estilo = gr.State('Anime')
