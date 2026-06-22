@@ -31,3 +31,37 @@ class FilterOptionsView(APIView):
             vals = VideoMetadata.objects.filter(tipo__iexact=tipo).values_list(f, flat=True).distinct()
             res[f] = sorted([str(v).strip() for v in vals if v and str(v).lower() != 'nan'])
         return Response(res)
+# ==========================================
+# AUTO-REGISTRO DESDE GRADIO
+# ==========================================
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AutoRegisterVideoView(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            video_data = {
+                'video_id': data.get('video_id', ''),
+                'tipo': 'registro',
+                'usuario': data.get('usuario', 'Mateo'),
+                'mateo_miguel': data.get('mateo_miguel', 'Mateo'),
+                'estilizado': data.get('estilizado', 'Anime'),
+                'prompt_imagen': data.get('prompt_imagen', ''),
+                'imagen_link': data.get('imagen_link', ''),
+                'prompt_video': data.get('prompt_video', ''),
+                'drive_link': data.get('drive_link', ''),
+                'video_original_link': data.get('video_original_link', ''),
+            }
+            if video_data['video_id']:
+                VideoMetadata.objects.update_or_create(
+                    video_id=video_data['video_id'],
+                    tipo='registro',
+                    defaults=video_data
+                )
+            else:
+                VideoMetadata.objects.create(**video_data)
+            return Response({'status': 'success', 'message': 'Registrado OK'}, status=201)
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)}, status=400)
