@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart2, TrendingUp, Users, Camera, CheckSquare,
-  MapPin, ArrowLeft, AlertTriangle, Palette, Layers,
+  MapPin, AlertTriangle, Palette, Layers,
   Activity, Sliders, Shield, Filter, Bell, X, RefreshCw,
   Download, Copy, ChevronDown, ChevronUp, Link2, Clock, Database,
 } from 'lucide-react';
+import AppNavbar from '../components/AppNavbar';
+import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
 
 /* ─────────────────────────────────────────────────────────────
@@ -77,6 +79,13 @@ function round(v, d = 1) { return Math.round(v * 10 ** d) / 10 ** d; }
    Separa la logica del IIFE para evitar crashes en el error boundary.
    ───────────────────────────────────────────────────────────────────────── */
 function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hideTip }) {
+  // Variables de tema propias (MetadatosTab es un componente externo al padre)
+  const { theme } = useTheme();
+  const tc      = theme === 'dark' ? 'white'                  : '#111111';
+  const tcMuted = theme === 'dark' ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
+  const bgBar   = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)';
+  const bgRow   = theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+
   const ms       = metadataStats;
   const totalReg = ms.totalRegistros   || 0;
   const conMeta  = ms.conMetadata      || 0;
@@ -91,6 +100,7 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
   const maxSize   = sizList.length > 0 ? Math.max(...sizList.map(s => s.avgSizeMb)): 1;
   const maxDurCnt = durDist.length > 0 ? Math.max(...durDist.map(d => d.cantidad)) : 1;
   const maxFpsCnt = fpsDist.length > 0 ? Math.max(...fpsDist.map(d => d.cantidad)) : 1;
+
 
   return (
     <section className="resumen-section">
@@ -128,8 +138,8 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
             </div>
           ) : fpsList.map(f => (
             <div key={f.estilo} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ width: '90px', fontSize: '0.8rem', color: '#fff', textAlign: 'right' }}>{f.estilo}</div>
-              <div style={{ flexGrow: 1, background: 'rgba(255,255,255,0.04)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: '90px', fontSize: '0.8rem', color: tc, textAlign: 'right' }}>{f.estilo}</div>
+              <div style={{ flexGrow: 1, background: bgBar, height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div
                   style={{ width: `${(f.avgFps / maxFps) * 100}%`, height: '100%', background: f.color, borderRadius: '5px', transition: 'width 0.6s ease' }}
                   onMouseMove={e => showTip(e, f.estilo, `${f.avgFps} fps (${f.conDatos} videos)`)}
@@ -149,8 +159,8 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
             <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '30px 0' }}>Sin datos de tamaño</div>
           ) : sizList.map(s => (
             <div key={s.estilo} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ width: '90px', fontSize: '0.8rem', color: '#fff', textAlign: 'right' }}>{s.estilo}</div>
-              <div style={{ flexGrow: 1, background: 'rgba(255,255,255,0.04)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: '90px', fontSize: '0.8rem', color: tc, textAlign: 'right' }}>{s.estilo}</div>
+              <div style={{ flexGrow: 1, background: bgBar, height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div
                   style={{ width: `${(s.avgSizeMb / maxSize) * 100}%`, height: '100%', background: s.color, borderRadius: '5px', transition: 'width 0.6s ease' }}
                   onMouseMove={e => showTip(e, s.estilo, `${s.avgSizeMb} MB promedio (total: ${s.totalSizeMb} MB, ${s.conDatos} videos)`)}
@@ -172,8 +182,8 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
             <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '30px 0' }}>Sin datos de FPS</div>
           ) : fpsDist.map(d => (
             <div key={d.fps} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ width: '50px', fontSize: '0.8rem', color: '#fff', textAlign: 'right' }}>{d.fps} fps</div>
-              <div style={{ flexGrow: 1, background: 'rgba(255,255,255,0.04)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: '50px', fontSize: '0.8rem', color: tc, textAlign: 'right' }}>{d.fps} fps</div>
+              <div style={{ flexGrow: 1, background: bgBar, height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div
                   style={{ width: `${(d.cantidad / maxFpsCnt) * 100}%`, height: '100%', background: 'linear-gradient(to right, #bc13fe, #00f2ff)', borderRadius: '5px', transition: 'width 0.6s ease' }}
                   onMouseMove={e => showTip(e, `${d.fps} fps`, `${d.cantidad} videos`)}
@@ -195,8 +205,8 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
             const colors = ['#2ecc71', '#00f2ff', '#f39c12', '#ff4b2b'];
             return (
               <div key={d.rango} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ width: '60px', fontSize: '0.8rem', color: '#fff', textAlign: 'right' }}>{d.rango}</div>
-                <div style={{ flexGrow: 1, background: 'rgba(255,255,255,0.04)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: '60px', fontSize: '0.8rem', color: tc, textAlign: 'right' }}>{d.rango}</div>
+                <div style={{ flexGrow: 1, background: bgBar, height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div
                     style={{ width: `${(d.cantidad / maxDurCnt) * 100}%`, height: '100%', background: colors[i % colors.length], borderRadius: '5px', transition: 'width 0.6s ease' }}
                     onMouseMove={e => showTip(e, `Duración ${d.rango}`, `${d.cantidad} videos`)}
@@ -220,15 +230,15 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
           ) : (
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {resList.map(r => (
-                <div key={r.estilo} style={{ flex: '1', minWidth: '160px', padding: '14px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: `1px solid ${r.color}33` }}>
+                <div key={r.estilo} style={{ flex: '1', minWidth: '160px', padding: '14px', background: bgBar, borderRadius: '10px', border: `1px solid ${r.color}33` }}>
                   <div style={{ fontSize: '0.72rem', color: r.color, fontWeight: 'bold', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>{r.estilo}</div>
-                  <div style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}>{r.resolucionMasComun}</div>
+                  <div style={{ fontSize: '1.1rem', color: tc, fontWeight: 'bold', marginBottom: '4px' }}>{r.resolucionMasComun}</div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{r.conDatos} videos con datos</div>
                   {r.conteos && r.conteos.length > 1 && (
                     <div style={{ marginTop: '8px' }}>
                       {r.conteos.slice(0, 3).map(c => (
                         <div key={c.res} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-dim)', padding: '2px 0' }}>
-                          <span>{c.res}</span><span style={{ color: '#fff' }}>{c.cnt}x</span>
+                          <span>{c.res}</span><span style={{ color: tc }}>{c.cnt}x</span>
                         </div>
                       ))}
                     </div>
@@ -251,8 +261,8 @@ function MetadatosTab({ metadataStats = {}, duracionPorEstilo = [], showTip, hid
             const barColor = pct >= 90 ? '#2ecc71' : pct >= 80 ? '#f39c12' : '#ff4b2b';
             return (
               <div key={d.estilo} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                <div style={{ width: '90px', fontSize: '0.8rem', color: '#fff', textAlign: 'right' }}>{d.estilo}</div>
-                <div style={{ flexGrow: 1, background: 'rgba(255,255,255,0.04)', height: '14px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: '90px', fontSize: '0.8rem', color: tc, textAlign: 'right' }}>{d.estilo}</div>
+                <div style={{ flexGrow: 1, background: bgBar, height: '14px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div
                     style={{ width: `${Math.min(pct, 100)}%`, height: '100%', background: barColor, borderRadius: '5px', transition: 'width 0.8s ease' }}
                     onMouseMove={e => showTip(e, `${d.estilo} — Retención`, `${d.avgDurOriginal}s orig → ${d.avgDurEstilizado}s estil = ${pct}%`)}
@@ -301,6 +311,14 @@ const Estadisticas = () => {
   const [metaStatus, setMetaStatus]       = useState(null);
   const [syncing, setSyncing]             = useState(false);
   const [extracting, setExtracting]       = useState(false);
+
+  // Tema activo y color de texto dinámico
+  const { theme } = useTheme();
+  const tc      = theme === 'dark' ? 'white'                 : '#111111';
+  const tcSub   = theme === 'dark' ? 'rgba(255,255,255,0.85)' : '#333333';
+  const tcMuted = theme === 'dark' ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
+  const bgRow   = theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  const bgBar   = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)';
 
   // ── Estado de datos crudos (del backend) ─────────────────────────
   const [rawData, setRawData] = useState(null); // respuesta completa del API
@@ -624,7 +642,7 @@ Por favor coordinar con el productor asignado.`;
     <div className="resumen-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
       <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', maxWidth: '400px' }}>
         <div style={{ margin: '0 auto 20px', width: '50px', height: '50px', borderRadius: '50%', border: '3px solid rgba(188,19,254,0.2)', borderTopColor: '#bc13fe', animation: 'spin 1s linear infinite' }} />
-        <h2 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '10px' }}>Cargando estadísticas...</h2>
+        <h2 style={{ color: tc, fontSize: '1.2rem', marginBottom: '10px' }}>Cargando estadísticas...</h2>
         <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: 0 }}>Analizando Excel y calculando métricas de balance.</p>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -635,7 +653,7 @@ Por favor coordinar con el productor asignado.`;
     <div className="resumen-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
       <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', maxWidth: '500px', borderLeft: '4px solid #bc13fe' }}>
         <AlertTriangle size={48} color="#bc13fe" style={{ marginBottom: '15px' }} />
-        <h2 style={{ color: 'white', fontSize: '1.4rem', marginBottom: '10px' }}>Error de Carga</h2>
+        <h2 style={{ color: tc, fontSize: '1.4rem', marginBottom: '10px' }}>Error de Carga</h2>
         <p style={{ color: '#ffb3a7', fontSize: '0.95rem', marginBottom: '20px' }}>{error}</p>
         <button className="neon-button" onClick={fetchData}>REINTENTAR</button>
       </div>
@@ -651,8 +669,8 @@ Por favor coordinar con el productor asignado.`;
     const pct = maxVal > 0 ? (value / maxVal) * 100 : 0;
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-        <div style={{ width: '110px', fontSize: '0.82rem', color: '#fff', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-        <div style={{ flexGrow: 1, backgroundColor: 'rgba(255,255,255,0.04)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ width: '110px', fontSize: '0.82rem', color: tc, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+        <div style={{ flexGrow: 1, backgroundColor: bgBar, height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: color || `linear-gradient(to right, #00f2ff, #bc13fe)`, borderRadius: '5px', transition: 'width 0.6s ease' }}
             onMouseMove={e => showTip(e, label, extra || `${value}`)} onMouseLeave={hideTip} />
         </div>
@@ -664,8 +682,8 @@ Por favor coordinar con el productor asignado.`;
   // Barra apilada multi-segmento
   const BarraApilada = ({ label, segmentos, total }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-      <div style={{ width: '80px', fontSize: '0.78rem', color: '#fff', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-      <div style={{ flexGrow: 1, height: '14px', borderRadius: '4px', display: 'flex', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ width: '80px', fontSize: '0.78rem', color: tc, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+      <div style={{ flexGrow: 1, height: '14px', borderRadius: '4px', display: 'flex', overflow: 'hidden', backgroundColor: bgBar, border: '1px solid rgba(255,255,255,0.06)' }}>
         {segmentos.map((seg, i) => seg.value > 0 && (
           <div key={i} style={{ width: `${(seg.value / (total || 1)) * 100}%`, height: '100%', backgroundColor: seg.color }}
             onMouseMove={e => showTip(e, `${label} — ${seg.label}`, `${seg.value} (${round((seg.value / (total || 1)) * 100, 1)}%)`)}
@@ -682,10 +700,10 @@ Por favor coordinar con el productor asignado.`;
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h3 style={{ margin: '0 0 4px', fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px' }}>{titulo}</h3>
-          <p className="kpi-value" style={{ color: color || 'white' }}>{valor}</p>
+          <p className="kpi-value" style={{ color: color || tc }}>{valor}</p>
           {subtitulo && <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{subtitulo}</span>}
         </div>
-        {Icon && <Icon size={22} color={color || 'rgba(255,255,255,0.2)'} />}
+        {Icon && <Icon size={22} color={color || 'var(--text-muted)'} />}
       </div>
     </div>
   );
@@ -720,8 +738,8 @@ Por favor coordinar con el productor asignado.`;
             />
           );
         })}
-        <text x="60" y="56" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">{total}</text>
-        <text x="60" y="70" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="7">entradas</text>
+        <text x="60" y="56" textAnchor="middle" fill={tc} fontSize="14" fontWeight="bold">{total}</text>
+        <text x="60" y="70" textAnchor="middle" fill={tcMuted} fontSize="7">entradas</text>
       </svg>
     );
   };
@@ -736,7 +754,7 @@ Por favor coordinar con el productor asignado.`;
           <span style={{ fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase', color, letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>
             {SEVERIDAD_ICON[alerta.tipo]} {alerta.tipo.toUpperCase()}
           </span>
-          <p style={{ margin: 0, fontSize: '0.87rem', color: 'rgba(255,255,255,0.85)', lineHeight: '1.5' }}>{alerta.mensaje}</p>
+          <p style={{ margin: 0, fontSize: '0.87rem', color: tcSub, lineHeight: '1.5' }}>{alerta.mensaje}</p>
           {mostrarBoton && alerta.accion && (
             <button onClick={() => abrirSolicitud(alerta)} style={{ marginTop: '8px', fontSize: '0.72rem', padding: '4px 10px', borderRadius: '4px', border: `1px solid ${color}40`, background: `${color}10`, color, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <Download size={12} /> Solicitar más grabaciones
@@ -756,8 +774,8 @@ Por favor coordinar con el productor asignado.`;
         return (
           <button key={op} onClick={() => toggleFiltro(campo, op)} style={{
             padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', cursor: 'pointer',
-            border: `1px solid ${activo ? color : 'rgba(255,255,255,0.12)'}`,
-            background: activo ? `${color}25` : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${activo ? color : 'var(--glass-border)'}`,
+            background: activo ? `${color}25` : 'var(--glass-bg)',
             color: activo ? color : 'var(--text-dim)',
             fontWeight: activo ? 'bold' : 'normal',
             transition: 'all 0.2s',
@@ -771,14 +789,14 @@ Por favor coordinar con el productor asignado.`;
      BARRA DE FILTROS (colapsable)
   ─────────────────────────────────────────────────────────────────── */
   const BarraFiltros = () => (
-    <div className="glass-panel" style={{ marginBottom: '20px', padding: '16px 20px', border: filtrosActivos > 0 ? '1px solid rgba(188,19,254,0.3)' : '1px solid rgba(255,255,255,0.06)' }}>
+    <div className="glass-panel" style={{ marginBottom: '20px', padding: '16px 20px', border: filtrosActivos > 0 ? '1px solid rgba(188,19,254,0.3)' : '1px solid var(--glass-border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => setFiltrosOpen(v => !v)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Filter size={16} color={filtrosActivos > 0 ? '#bc13fe' : 'var(--text-dim)'} />
           <span style={{ fontSize: '0.85rem', color: filtrosActivos > 0 ? '#bc13fe' : 'var(--text-dim)', fontWeight: filtrosActivos > 0 ? 'bold' : 'normal' }}>
             Filtros del Dataset
             {filtrosActivos > 0 && (
-              <span style={{ marginLeft: '8px', backgroundColor: '#bc13fe', color: 'white', borderRadius: '50%', fontSize: '0.65rem', width: '18px', height: '18px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{filtrosActivos}</span>
+              <span style={{ marginLeft: '8px', backgroundColor: '#bc13fe', color: tc, borderRadius: '50%', fontSize: '0.65rem', width: '18px', height: '18px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{filtrosActivos}</span>
             )}
           </span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
@@ -839,8 +857,8 @@ Por favor coordinar con el productor asignado.`;
                 return (
                   <button key={l} onClick={() => setFiltros(prev => ({ ...prev, tieneArreglo: v }))} style={{
                     padding: '3px 12px', borderRadius: '20px', fontSize: '0.75rem', cursor: 'pointer',
-                    border: `1px solid ${activo ? '#00f2ff' : 'rgba(255,255,255,0.12)'}`,
-                    background: activo ? 'rgba(0,242,255,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${activo ? '#00f2ff' : 'var(--glass-border)'}`,
+                    background: activo ? 'rgba(0,242,255,0.15)' : 'var(--glass-bg)',
                     color: activo ? '#00f2ff' : 'var(--text-dim)', fontWeight: activo ? 'bold' : 'normal',
                   }}>{l}</button>
                 );
@@ -875,9 +893,11 @@ Por favor coordinar con el productor asignado.`;
           <span style={{
             position: 'absolute', top: '-4px', right: '-4px',
             backgroundColor: alertasCrit.length > 0 ? '#ff4b2b' : '#f39c12',
+            /* El badge siempre es de color sólido, texto blanco para contraste */
             color: 'white', borderRadius: '50%', fontSize: '0.65rem',
             width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 'bold', border: '2px solid #0d0d1a',
+            fontWeight: 'bold',
+            border: theme === 'dark' ? '2px solid #0d0d1a' : '2px solid #f0f0f0',
           }}>{alertas.length}</span>
         )}
       </button>
@@ -886,14 +906,26 @@ Por favor coordinar con el productor asignado.`;
       {alertasSidebarOpen && (
         <div style={{
           position: 'fixed', left: 0, top: 0, bottom: 0, width: '380px',
-          background: 'rgba(10, 10, 20, 0.97)', backdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(188,19,254,0.2)', zIndex: 1001,
+          /* Fondo adaptado al tema */
+          background: theme === 'dark'
+            ? 'rgba(10, 10, 20, 0.97)'
+            : 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRight: theme === 'dark'
+            ? '1px solid rgba(188,19,254,0.2)'
+            : '1px solid rgba(0,0,0,0.10)',
+          zIndex: 1001,
           display: 'flex', flexDirection: 'column', overflowY: 'auto',
+          boxShadow: theme === 'dark'
+            ? '4px 0 40px rgba(0,0,0,0.8)'
+            : '4px 0 40px rgba(0,0,0,0.10)',
+          transition: 'background 0.4s ease',
         }}>
           {/* Header del sidebar */}
-          <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <div>
-              <h3 style={{ margin: 0, color: 'white', fontSize: '1rem' }}>🔔 Alertas Activas</h3>
+              <h3 style={{ margin: 0, color: tc, fontSize: '1rem' }}>🔔 Alertas Activas</h3>
               <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                 {alertasCrit.length > 0 && <span style={{ color: '#ff4b2b' }}>{alertasCrit.length} crítica(s) </span>}
                 {alertasAdvert.length > 0 && <span style={{ color: '#f39c12' }}>{alertasAdvert.length} advert. </span>}
@@ -906,7 +938,7 @@ Por favor coordinar con el productor asignado.`;
           </div>
 
           {/* Resumen de severidades */}
-          <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: '12px', flexShrink: 0 }}>
+          <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', gap: '12px', flexShrink: 0 }}>
             {[
               { tipo: 'critica', label: 'Críticas', cnt: alertasCrit.length },
               { tipo: 'advertencia', label: 'Advertencias', cnt: alertasAdvert.length },
@@ -914,7 +946,7 @@ Por favor coordinar con el productor asignado.`;
             ].map(({ tipo, label, cnt }) => (
               <div key={tipo} style={{ flex: 1, textAlign: 'center', padding: '8px', borderRadius: '6px', backgroundColor: `${SEVERIDAD_COLOR[tipo]}10`, border: `1px solid ${SEVERIDAD_COLOR[tipo]}30` }}>
                 <div style={{ fontSize: '1.3rem', color: SEVERIDAD_COLOR[tipo], fontWeight: 'bold' }}>{cnt}</div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>{label}</div>
+                <div style={{ fontSize: '0.65rem', color: tc }}>{label}</div>
               </div>
             ))}
           </div>
@@ -944,10 +976,15 @@ Por favor coordinar con el productor asignado.`;
       )}
       {/* Overlay */}
       {alertasSidebarOpen && (
-        <div onClick={() => setAlertasSidebarOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)' }} />
+        <div onClick={() => setAlertasSidebarOpen(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)',
+        }} />
       )}
     </>
   );
+
+
 
   /* ─────────────────────────────────────────────────────────────────
      MODAL "SOLICITAR MÁS GRABACIONES"
@@ -958,12 +995,12 @@ Por favor coordinar con el productor asignado.`;
       <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)' }}>
         <div className="glass-panel" style={{ width: '500px', maxWidth: '90vw', padding: '28px', borderTop: '3px solid #bc13fe' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, color: 'white', fontSize: '1rem' }}>📋 {modalSolicitud.titulo}</h3>
+            <h3 style={{ margin: 0, color: tc, fontSize: '1rem' }}>📋 {modalSolicitud.titulo}</h3>
             <button onClick={() => setModalSolicitud(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}>
               <X size={20} />
             </button>
           </div>
-          <textarea readOnly value={modalSolicitud.texto} style={{ width: '100%', height: '200px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'rgba(255,255,255,0.85)', fontSize: '0.82rem', padding: '12px', resize: 'vertical', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+          <textarea readOnly value={modalSolicitud.texto} style={{ width: '100%', height: '200px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: tcSub, fontSize: '0.82rem', padding: '12px', resize: 'vertical', fontFamily: 'monospace', boxSizing: 'border-box' }} />
           <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
             <button onClick={copiarSolicitud} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid rgba(0,242,255,0.3)', background: 'rgba(0,242,255,0.1)', color: '#00f2ff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem' }}>
               <Copy size={14} /> Copiar texto
@@ -989,6 +1026,25 @@ Por favor coordinar con el productor asignado.`;
      RENDER PRINCIPAL
   ─────────────────────────────────────────────────────────────────── */
   return (
+    <>
+    {/* Navbar global con botón de tema */}
+    <AppNavbar
+      backTo="/dashboard"
+      backLabel="Dashboard"
+      rightSlot={
+        <button
+          title="Refrescar datos desde el backend"
+          disabled={loading}
+          className="neon-button"
+          style={{ fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          onClick={fetchData}
+        >
+          <RefreshCw size={13} style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }} />
+          {loading ? 'Cargando...' : 'Actualizar'}
+        </button>
+      }
+    />
+
     <div className="resumen-page-container">
       {/* Tooltip global — pointerEvents none para no interceptar el mouse */}
       {tooltip.show && (
@@ -1007,28 +1063,6 @@ Por favor coordinar con el productor asignado.`;
 
       {/* Modal de solicitud */}
       <ModalSolicitud />
-
-      {/* Botón INICIO */}
-      <button onClick={() => navigate('/dashboard')} style={{
-        position: 'fixed', top: '20px', left: '20px', zIndex: 999,
-        background: 'transparent', border: '1px solid #bc13fe', color: '#bc13fe',
-        padding: '8px 15px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold',
-        boxShadow: '0 0 15px rgba(188,19,254,0.4)', display: 'inline-flex', alignItems: 'center', gap: '6px',
-      }}>
-        <ArrowLeft size={16} /> INICIO
-      </button>
-
-      {/* Botón ACTUALIZAR */}
-      <button title="Refrescar datos desde el backend" disabled={loading} onClick={fetchData} style={{
-        position: 'fixed', top: '20px', right: '20px', zIndex: 999,
-        background: 'transparent', border: '1px solid #bc13fe', color: '#bc13fe',
-        padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold',
-        boxShadow: '0 0 15px rgba(188,19,254,0.4)', display: 'inline-flex', alignItems: 'center', gap: '8px',
-        opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer',
-      }}>
-        <RefreshCw size={15} style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }} />
-        {loading ? 'CARGANDO...' : 'ACTUALIZAR'}
-      </button>
 
       {/* Header */}
       <header style={{ textAlign: 'center', marginBottom: '30px', paddingTop: '10px' }}>
@@ -1086,7 +1120,7 @@ Por favor coordinar con el productor asignado.`;
               style={activeTab === id ? { borderColor: '#bc13fe', color: '#bc13fe', boxShadow: '0 0 12px rgba(188,19,254,0.4)' } : {}}>
               <Icon size={15} style={{ marginRight: '5px' }} /> {label}
               {alertasTab.length > 0 && (
-                <span style={{ marginLeft: '5px', backgroundColor: alertasTab.some(a => a.tipo === 'critica') ? '#ff4b2b' : '#f39c12', color: 'white', borderRadius: '50%', fontSize: '0.6rem', width: '15px', height: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                <span style={{ marginLeft: '5px', backgroundColor: alertasTab.some(a => a.tipo === 'critica') ? '#ff4b2b' : '#f39c12', color: tc, borderRadius: '50%', fontSize: '0.6rem', width: '15px', height: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                   {alertasTab.length}
                 </span>
               )}
@@ -1135,7 +1169,7 @@ Por favor coordinar con el productor asignado.`;
                     <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: s.color, flexShrink: 0 }} />
                       <div>
-                        <div style={{ fontSize: '0.88rem', color: 'white', fontWeight: 'bold' }}>{s.label}</div>
+                        <div style={{ fontSize: '0.88rem', color: tc, fontWeight: 'bold' }}>{s.label}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{s.value} entradas · {s.percent}%</div>
                       </div>
                     </div>
@@ -1156,7 +1190,7 @@ Por favor coordinar con el productor asignado.`;
                       <span style={{ color: p.color, fontWeight: 'bold' }}>{p.label}</span>
                       <span style={{ color: 'var(--text-dim)' }}>{p.value} entradas · {p.percent}%</span>
                     </div>
-                    <div style={{ width: '100%', height: '10px', borderRadius: '5px', backgroundColor: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '10px', borderRadius: '5px', backgroundColor: bgBar, overflow: 'hidden' }}>
                       <div style={{ width: `${p.percent}%`, height: '100%', backgroundColor: p.color, borderRadius: '5px', boxShadow: `0 0 8px ${p.color}60` }}
                         onMouseMove={e => showTip(e, p.label, `${p.value} entradas (${p.percent}%)`)} onMouseLeave={hideTip} />
                     </div>
@@ -1258,18 +1292,18 @@ Por favor coordinar con el productor asignado.`;
                 <div style={{ marginTop: '20px', overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
                         <th style={{ padding: '8px 10px', color: 'var(--text-dim)', textAlign: 'left', minWidth: '110px' }}>MAPA</th>
                         {estilosValidos.map(est => (
                           <th key={est} style={{ padding: '8px 10px', color: cEst(est), textAlign: 'center' }}>{est}</th>
                         ))}
-                        <th style={{ padding: '8px 10px', color: 'white', textAlign: 'center' }}>Total</th>
+                        <th style={{ padding: '8px 10px', color: tc, textAlign: 'center' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {mapasStats.slice(0, 25).map((m, i) => (
-                        <tr key={m.mapa} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', backgroundColor: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
-                          <td style={{ padding: '7px 10px', color: 'white', fontWeight: '500', whiteSpace: 'nowrap' }}>{m.mapa}</td>
+                        <tr key={m.mapa} style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+                          <td style={{ padding: '7px 10px', color: tc, fontWeight: '500', whiteSpace: 'nowrap' }}>{m.mapa}</td>
                           {estilosValidos.map(est => {
                             const cnt = m[est.toLowerCase()] || 0;
                             const maxCell = Math.max(...mapasStats.map(ms => ms[est.toLowerCase()] || 0), 1);
@@ -1285,7 +1319,7 @@ Por favor coordinar con el productor asignado.`;
                               </td>
                             );
                           })}
-                          <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 'bold', color: 'white' }}>{m.total}</td>
+                          <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 'bold', color: tc }}>{m.total}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1306,7 +1340,7 @@ Por favor coordinar con el productor asignado.`;
                   </div>
                 ) : mapasGaps.map((gap, i) => (
                   <div key={i} style={{ padding: '10px 14px', marginBottom: '8px', backgroundColor: 'rgba(255,75,43,0.06)', border: '1px solid rgba(255,75,43,0.15)', borderRadius: '6px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.87rem', color: 'white', marginBottom: '4px' }}>{gap.mapa}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.87rem', color: tc, marginBottom: '4px' }}>{gap.mapa}</div>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {gap.estilosFaltantes.map(est => (
                         <span key={est} style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', backgroundColor: `${cEst(est)}20`, color: cEst(est), border: `1px solid ${cEst(est)}40` }}>sin {est}</span>
@@ -1361,7 +1395,7 @@ Por favor coordinar con el productor asignado.`;
               <p className="chart-subtitle">Valores absolutos y porcentajes por estilo visual.</p>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem', marginTop: '20px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
                     {['Estilo', 'Total', 'Humano', 'Animal', 'Entorno', '% Animal'].map(h => (
                       <th key={h} style={{ padding: '8px 10px', color: 'var(--text-dim)', textAlign: 'left', fontWeight: '600', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{h}</th>
                     ))}
@@ -1369,9 +1403,9 @@ Por favor coordinar con el productor asignado.`;
                 </thead>
                 <tbody>
                   {especiePorEstilo.map(e => (
-                    <tr key={e.estilo} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <tr key={e.estilo} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                       <td style={{ padding: '8px 10px', color: e.color, fontWeight: 'bold' }}>{e.estilo}</td>
-                      <td style={{ padding: '8px 10px', color: 'white' }}>{e.total}</td>
+                      <td style={{ padding: '8px 10px', color: tc }}>{e.total}</td>
                       <td style={{ padding: '8px 10px', color: '#00f2ff' }}>{e.humano}</td>
                       <td style={{ padding: '8px 10px', color: '#2ecc71' }}>{e.animal}</td>
                       <td style={{ padding: '8px 10px', color: '#9b59b6' }}>{e.entorno}</td>
@@ -1471,7 +1505,7 @@ Por favor coordinar con el productor asignado.`;
               <h3>⏱ Duración Original vs Estilizado</h3>
               <p className="chart-subtitle">Comparativa por estilo (requiere extracción de metadatos).</p>
               {duracionPorEstilo.every(d => d.conDatos === 0) ? (
-                <div style={{ marginTop: '30px', textAlign: 'center', padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <div style={{ marginTop: '30px', textAlign: 'center', padding: '20px', backgroundColor: bgRow, borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                   <Clock size={32} color="var(--text-dim)" style={{ marginBottom: '12px' }} />
                   <p style={{ color: 'var(--text-dim)', fontSize: '0.88rem', margin: 0 }}>
                     Sin datos de duración aún.<br/>
@@ -1482,7 +1516,7 @@ Por favor coordinar con el productor asignado.`;
                 <div style={{ marginTop: '20px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
                         {['Estilo', 'Orig. (s)', 'Estil. (s)', '% Retención', 'Alertas'].map(h => (
                           <th key={h} style={{ padding: '8px 10px', color: 'var(--text-dim)', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{h}</th>
                         ))}
@@ -1490,10 +1524,10 @@ Por favor coordinar con el productor asignado.`;
                     </thead>
                     <tbody>
                       {duracionPorEstilo.map(d => (
-                        <tr key={d.estilo} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <tr key={d.estilo} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                           <td style={{ padding: '8px 10px', color: d.color, fontWeight: 'bold' }}>{d.estilo}</td>
-                          <td style={{ padding: '8px 10px', color: 'white' }}>{d.avgDurOriginal ?? '—'}</td>
-                          <td style={{ padding: '8px 10px', color: 'white' }}>{d.avgDurEstilizado ?? '—'}</td>
+                          <td style={{ padding: '8px 10px', color: tc }}>{d.avgDurOriginal ?? '—'}</td>
+                          <td style={{ padding: '8px 10px', color: tc }}>{d.avgDurEstilizado ?? '—'}</td>
                           <td style={{ padding: '8px 10px' }}>
                             {d.pctRetencion != null
                               ? <span style={{ color: d.pctRetencion < 80 ? '#ff4b2b' : '#2ecc71', fontWeight: 'bold' }}>{d.pctRetencion}%</span>
@@ -1534,7 +1568,7 @@ Por favor coordinar con el productor asignado.`;
               <p className="chart-subtitle">Entradas con imagen, video y prompt de arreglo por estilo visual.</p>
               <div style={{ marginTop: '20px' }}>
                 {(rawData?.arreglosPorEstilo || []).map(e => (
-                  <div key={e.estilo} style={{ marginBottom: '22px', padding: '14px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: `1px solid ${e.color}20` }}>
+                  <div key={e.estilo} style={{ marginBottom: '22px', padding: '14px', backgroundColor: bgRow, borderRadius: '8px', border: `1px solid ${e.color}20` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <span style={{ color: e.color, fontWeight: 'bold' }}>{e.estilo}</span>
                       <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{e.total} entradas</span>
@@ -1612,9 +1646,9 @@ Por favor coordinar con el productor asignado.`;
                   ) : (
                     <div style={{ fontSize: '0.82rem' }}>
                       <div style={{ color: '#2ecc71', fontWeight: 'bold', marginBottom: '6px' }}>✅ Sincronización exitosa</div>
-                      <div style={{ color: 'var(--text-dim)' }}>🆕 Filas nuevas: <strong style={{ color: 'white' }}>{syncStatus.nuevas}</strong></div>
-                      <div style={{ color: 'var(--text-dim)' }}>🔄 Actualizadas: <strong style={{ color: 'white' }}>{syncStatus.actualizadas}</strong></div>
-                      <div style={{ color: 'var(--text-dim)' }}>📊 Total Sheets: <strong style={{ color: 'white' }}>{syncStatus.totalSheets}</strong></div>
+                      <div style={{ color: 'var(--text-dim)' }}>🆕 Filas nuevas: <strong style={{ color: tc }}>{syncStatus.nuevas}</strong></div>
+                      <div style={{ color: 'var(--text-dim)' }}>🔄 Actualizadas: <strong style={{ color: tc }}>{syncStatus.actualizadas}</strong></div>
+                      <div style={{ color: 'var(--text-dim)' }}>📊 Total Sheets: <strong style={{ color: tc }}>{syncStatus.totalSheets}</strong></div>
                       <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', marginTop: '4px' }}>⏰ {syncStatus.timestamp?.replace('T', ' ').slice(0, 19)}</div>
                     </div>
                   )}
@@ -1648,9 +1682,9 @@ Por favor coordinar con el productor asignado.`;
                     <div style={{ fontSize: '0.82rem' }}>
                       <div style={{ color: '#bc13fe', fontWeight: 'bold', marginBottom: '8px' }}>📦 Estado de la caché:</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                        <div style={{ color: 'var(--text-dim)' }}>Videos procesados: <strong style={{ color: 'white' }}>{metaStatus.totalVideos}</strong></div>
+                        <div style={{ color: 'var(--text-dim)' }}>Videos procesados: <strong style={{ color: tc }}>{metaStatus.totalVideos}</strong></div>
                         <div style={{ color: 'var(--text-dim)' }}>Videos OK: <strong style={{ color: '#2ecc71' }}>{metaStatus.videosOk}</strong></div>
-                        <div style={{ color: 'var(--text-dim)' }}>Imágenes: <strong style={{ color: 'white' }}>{metaStatus.totalImagenes}</strong></div>
+                        <div style={{ color: 'var(--text-dim)' }}>Imágenes: <strong style={{ color: tc }}>{metaStatus.totalImagenes}</strong></div>
                         <div style={{ color: 'var(--text-dim)' }}>Imágenes OK: <strong style={{ color: '#2ecc71' }}>{metaStatus.imagenesOk}</strong></div>
                       </div>
                       {metaStatus.lastUpdated && (
@@ -1667,8 +1701,8 @@ Por favor coordinar con el productor asignado.`;
                 </div>
               )}
 
-              <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '6px', fontSize: '0.78rem', color: 'var(--text-dim)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <strong style={{ color: 'white' }}>⚠ Nota:</strong> La extracción procesa de 10 en 10 videos en segundo plano usando yt-dlp.
+              <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: bgRow, borderRadius: '6px', fontSize: '0.78rem', color: 'var(--text-dim)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <strong style={{ color: tc }}>⚠ Nota:</strong> La extracción procesa de 10 en 10 videos en segundo plano usando yt-dlp.
                 Los videos de Drive públicos pueden tardar ~10-30s cada uno.
                 Recarga el estado con el botón de abajo para ver el progreso.
               </div>
@@ -1686,7 +1720,7 @@ Por favor coordinar con el productor asignado.`;
                 </button>
                 <button onClick={fetchMetaStatus} style={{
                   width: '100%', padding: '10px', borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)',
                   color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.82rem',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 }}>
@@ -1726,6 +1760,7 @@ Por favor coordinar con el productor asignado.`;
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+    </>
   );
 };
 

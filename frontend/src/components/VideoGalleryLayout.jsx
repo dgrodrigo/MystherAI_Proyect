@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AppNavbar from './AppNavbar';
 import api from '../utils/api';
 
 const VideoGalleryLayout = ({ tipo, titulo }) => {
@@ -96,8 +97,11 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
   };
 
   return (
+    <>
+    {/* Navbar global con botón de tema */}
+    <AppNavbar backTo="/dashboard" backLabel="Dashboard" />
+
     <div className="gallery-page-centered">
-      <button className="back-home-btn fixed-btn" onClick={() => navigate('/dashboard')}>⬅ INICIO</button>
       
       <header className="control-header glass-panel">
         <h1 className="page-title-center">{titulo}</h1>
@@ -143,7 +147,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                   <div className="play-btn">▶</div>
                 </div>
                 <div className="yt-info">
-                  <h3 className="yt-title" style={{color: 'var(--neon-cyan)'}}>ID: {v.video_id || 'Desconocido'}</h3>
+                  <h3 className="yt-title" style={{color: 'var(--silver-mid)'}}>ID: {v.video_id || 'Desconocido'}</h3>
                   <p className="yt-meta">{v.usuario || 'Anónimo'} • {v.estilizado || v.mapa || 'Sin Categoría'}</p>
                 </div>
               </div>
@@ -314,6 +318,7 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

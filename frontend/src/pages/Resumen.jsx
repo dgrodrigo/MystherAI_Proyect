@@ -7,7 +7,6 @@ import {
   Camera,
   CheckSquare,
   MapPin,
-  ArrowLeft,
   AlertTriangle,
   Check,
   Search,
@@ -15,6 +14,8 @@ import {
   UserCheck,
   Percent
 } from 'lucide-react';
+import AppNavbar from '../components/AppNavbar';
+import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
 
 const Resumen = () => {
@@ -24,7 +25,7 @@ const Resumen = () => {
 
   const userColors = [
     '#ff4b2b',
-    'var(--neon-cyan)',
+    'var(--silver-mid)',
     '#bc13fe',
     '#2ecc71',
     '#f39c12',
@@ -52,12 +53,17 @@ const Resumen = () => {
   const [duracionData, setDuracionData] = useState([]);
   const [actionPlan, setActionPlan] = useState([]);
 
-  // Estados para los controles de la tabla de mapas
+  // Controles de la tabla de mapas
   const [mapSearch, setMapSearch] = useState('');
   const [mapSort, setMapSort] = useState('total-desc');
   const [showAllMaps, setShowAllMaps] = useState(false);
 
-  // Función de carga de datos (reutilizable para el botón Actualizar)
+  // Tema activo y color de texto dinámico
+  const { theme } = useTheme();
+  const tc      = theme === 'dark' ? 'white'                    : '#111111';
+  const tcMuted = theme === 'dark' ? 'rgba(255,255,255,0.5)'    : 'rgba(0,0,0,0.5)';
+
+
   const fetchSummary = async (forceBackend = false) => {
     try {
       setLoading(true);
@@ -262,11 +268,11 @@ const Resumen = () => {
             width: '50px',
             height: '50px',
             borderRadius: '50%',
-            border: '3px solid rgba(0, 242, 255, 0.1)',
-            borderTopColor: 'var(--neon-cyan)',
+            border: '3px solid rgba(192,192,192,0.1)',
+            borderTopColor: 'var(--silver-mid)',
             animation: 'spin 1s linear infinite'
           }} />
-          <h2 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '10px' }}>Cargando datos del censo...</h2>
+          <h2 style={{ color: tc, fontSize: '1.2rem', marginBottom: '10px' }}>Cargando datos del censo...</h2>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: 0 }}>Preparando gráficos y estadísticas interactivas.</p>
         </div>
         <style>{`
@@ -283,7 +289,7 @@ const Resumen = () => {
       <div className="resumen-page-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
         <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', maxWidth: '500px', borderLeft: '4px solid #ff4b2b' }}>
           <AlertTriangle size={48} color="#ff4b2b" style={{ marginBottom: '15px' }} />
-          <h2 style={{ color: 'white', fontSize: '1.4rem', marginBottom: '10px' }}>Error de Carga</h2>
+          <h2 style={{ color: tc, fontSize: '1.4rem', marginBottom: '10px' }}>Error de Carga</h2>
           <p style={{ color: '#ffb3a7', fontSize: '0.95rem', marginBottom: '20px' }}>{error}</p>
           <button className="neon-button" onClick={() => window.location.reload()}>REINTENTAR</button>
         </div>
@@ -306,75 +312,30 @@ const Resumen = () => {
   const mapsToDisplay = showAllMaps ? mapsFiltered : mapsFiltered.slice(0, 10);
 
   return (
-    <div className="resumen-page-container">
-      {/* Botón INICIO — fijo arriba izquierda */}
-      <button
-        onClick={() => navigate('/dashboard')}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          left: '20px',
-          zIndex: 999,
-          background: 'transparent',
-          border: '1px solid var(--neon-cyan)',
-          color: 'var(--neon-cyan)',
-          padding: '8px 15px',
-          borderRadius: '5px',
-          cursor: 'pointer',
-          fontWeight: 'bold',
-          boxShadow: '0 0 15px rgba(0, 242, 255, 0.4)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}
-      >
-        <ArrowLeft size={16} /> INICIO
-      </button>
-
-      {/* Botón ACTUALIZAR — fijo arriba derecha */}
-      <button
-        title="Consultar backend y refrescar todos los datos"
-        disabled={loading}
-        onClick={() => {
-          localStorage.removeItem('mystherai_action_plan');
-          fetchSummary(true);
-        }}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 999,
-          background: 'transparent',
-          border: '1px solid var(--neon-cyan)',
-          color: 'var(--neon-cyan)',
-          padding: '8px 15px',
-          borderRadius: '5px',
-          fontWeight: 'bold',
-          boxShadow: '0 0 15px rgba(0, 242, 255, 0.4)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          opacity: loading ? 0.7 : 1,
-          cursor: loading ? 'not-allowed' : 'pointer',
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="15" height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }}
+    <>
+    {/* Navbar global con botón de tema */}
+    <AppNavbar
+      backTo="/dashboard"
+      backLabel="Dashboard"
+      rightSlot={
+        <button
+          title="Consultar backend y refrescar todos los datos"
+          disabled={loading}
+          className="neon-button"
+          style={{ fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          onClick={() => { localStorage.removeItem('mystherai_action_plan'); fetchSummary(true); }}
         >
-          <polyline points="23 4 23 10 17 10" />
-          <polyline points="1 20 1 14 7 14" />
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-        </svg>
-        {loading ? 'CARGANDO...' : 'ACTUALIZAR'}
-      </button>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }}>
+            <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+          {loading ? 'Cargando...' : 'Actualizar'}
+        </button>
+      }
+    />
+
+    <div className="resumen-page-container">
 
       <header style={{ textAlign: 'center', marginBottom: '50px' }}>
         <h1 className="neon-title" style={{ marginBottom: '10px' }}>Análisis del Censo de Videos</h1>
@@ -470,7 +431,7 @@ const Resumen = () => {
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
               <TrendingUp size={20} className="neon-cyan-text" />
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'white' }}>Diagnóstico de Datos para Entrenamiento de IA</h3>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: tc }}>Diagnóstico de Datos para Entrenamiento de IA</h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -686,7 +647,7 @@ const Resumen = () => {
                   const percentageWidth = (m.total / maxVal) * 100;
                   return (
                     <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                      <div style={{ width: '120px', fontSize: '0.85rem', color: '#fff', textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ width: '120px', fontSize: '0.85rem', color: tc, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {m.name}
                       </div>
                       <div style={{ flexGrow: 1, backgroundColor: 'rgba(255,255,255,0.03)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -695,7 +656,7 @@ const Resumen = () => {
                           style={{
                             width: `${percentageWidth}%`,
                             height: '100%',
-                            background: 'linear-gradient(to right, var(--neon-cyan), var(--neon-purple))',
+                            background: 'linear-gradient(to right, var(--silver-dim), var(--silver-mid))',
                             borderRadius: '5px'
                           }}
                           onMouseMove={(e) => showChartTooltip(e, m.name, `${m.total} videos en total`)}
@@ -729,7 +690,7 @@ const Resumen = () => {
 
                   return (
                     <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                      <div style={{ width: '120px', fontSize: '0.85rem', color: '#fff', textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ width: '120px', fontSize: '0.85rem', color: tc, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {m.name}
                       </div>
                       <div style={{ flexGrow: 1, backgroundColor: 'rgba(255,255,255,0.03)', height: '14px', borderRadius: '4px', display: 'flex', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -851,7 +812,7 @@ const Resumen = () => {
                         
                         return (
                           <div key={m.name}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'white', marginBottom: '4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: tc, marginBottom: '4px' }}>
                               <span>{m.name}</span>
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                                 {Object.entries(mapUsers)
@@ -902,7 +863,7 @@ const Resumen = () => {
                       
                       return (
                         <div key={usr.usuario} className="glass-panel" style={{ padding: '15px', border: `1px solid ${getUsuarioColor(idx)}40`, background: 'rgba(255,255,255,0.01)' }}>
-                          <h4 style={{ margin: '0 0 12px 0', borderBottom: `1px solid ${getUsuarioColor(idx)}20`, paddingBottom: '8px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: '0 0 12px 0', borderBottom: `1px solid ${getUsuarioColor(idx)}20`, paddingBottom: '8px', color: tc, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>Solo {usr.usuario}</span>
                             <span className="tag" style={{ fontSize: '0.7rem', padding: '2px 8px', backgroundColor: `${getUsuarioColor(idx)}15`, borderColor: getUsuarioColor(idx), color: getUsuarioColor(idx) }}>
                               {userExcl.length} mapas
@@ -1046,7 +1007,7 @@ const Resumen = () => {
                         <div style={{ width: `${(hombresCount / totalHumans) * 100}%`, backgroundColor: 'var(--neon-cyan)' }} />
                         <div style={{ width: `${(mujeresCount / totalHumans) * 100}%`, backgroundColor: 'var(--neon-purple)' }} />
                       </div>
-                      <div style={{ width: '80px', color: '#fff' }}>H:{hombresCount} | M:{mujeresCount}</div>
+                      <div style={{ width: '80px', color: tc }}>H:{hombresCount} | M:{mujeresCount}</div>
                     </div>
                   );
                 })}
@@ -1322,6 +1283,7 @@ const Resumen = () => {
         </section>
       )}
     </div>
+    </>
   );
 };
 
