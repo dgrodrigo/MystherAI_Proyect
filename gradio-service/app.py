@@ -1,358 +1,219 @@
 ﻿import os
+import requests
 import cv2
+import wavespeed
+import gradio as gr
 import datetime
 import subprocess
+import re
 from pathlib import Path
-
-import gradio as gr
-import requests
-import wavespeed
 from dotenv import load_dotenv
 
 # ==========================================
-# 1. CARGA DE ENTORNO Y CLIENTE WAVESPEED
+# 1. CONFIGURACIÓN Y CLIENTE (FIX AUTENTICACIÓN)
 # ==========================================
 load_dotenv()
-MY_KEY = os.getenv("WAVESPEED_API_KEY", "").strip()
-if not MY_KEY:
-    print("⚠️ WAVESPEED_API_KEY no está configurada en .env")
-cl = wavespeed.Client(api_key=MY_KEY) if MY_KEY else None
+MY_KEY = "wsk_live_jotbLBG3MeaiXaTNBg5adM0tL6SeS2SAzPwDx3-sB2s" 
+os.environ["WAVESPEED_API_KEY"] = MY_KEY
+cl = wavespeed.Client(api_key=MY_KEY)
 
-# ==========================================
-# 2. CARPETAS LOCALES
-# ==========================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE = "outputs"
-RUTAS = {
-    "cap": os.path.join(BASE, "01_CAPTURAS"),
-    "est": os.path.join(BASE, "02_ESTILIZADOS"),
-    "vid": os.path.join(BASE, "03_VIDEOS_FINALES"),
-    "trans": os.path.join(BASE, "04_TRANSFORMACIONES"),
-}
-for ruta in RUTAS.values():
-    os.makedirs(ruta, exist_ok=True)
-os.makedirs(os.path.join(BASE, "temp"), exist_ok=True)
+RUTAS = {k: os.path.join(BASE_DIR, BASE, v) for k, v in {
+    "cap": "01_CAPTURAS",
+    "est": "02_ESTILIZADOS",
+    "vid": "03_VIDEOS_FINALES",
+    "trans": "04_TRANSFORMACIONES"
+}.items()}
+for c in RUTAS.values(): os.makedirs(c, exist_ok=True)
+TEMP_DIR = os.path.join(BASE_DIR, BASE, "temp_local_bridge") 
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 # ==========================================
-# 3. FUNCIONES DE SOPORTE
+# 2. FUNCIONES DE APOYO
+# ==========================================
+
+def clean_drive_url(url):
+    if not url or "drive.google.com" not in str(url): return url
+    match = re.search(r'(?:file\/d\/|id=|\/d\/)([-\w]{25,})', str(url))
+    return f"https://drive.google.com/uc?export=download&id={match.group(1)}" if match else url
+
+def descargar_a_temp_local(url_o_ruta, ext="tmp"):
+    if not str(url_o_ruta).startswith("http"): return url_o_ruta 
+    url = clean_drive_url(url_o_ruta)
+    file_extension_match = re.search(r'\.(\w+)$', url.split('?')[0])
+    if file_extension_match: ext = file_extension_match.group(1)
+    temp_name = os.path.join(TEMP_DIR, f"web_dl_{datetime.datetime.now().strftime('%H%M%S_%f')}.{ext}")
+    try:
+        r = requests.get(url, stream=True, timeout=30)
+        r.raise_for_status()
+        with open(temp_name, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192): f.write(chunk)
+        return temp_name
+    except Exception as e: raise gr.Error(f"❌ Error descarga: {str(e)}")
+
+def preparar_y_subir_imagen_wavespeed(ruta):
+    if not str(ruta).startswith("http"):
+        ruta_abs = os.path.join(BASE_DIR, ruta) if not os.path.isabs(ruta) else ruta
+        if os.path.exists(ruta_abs): return cl.upload(ruta_abs)
+    return clean_drive_url(ruta)
+
+# ==========================================
+# 3. FUNCIONES ORIGINALES (SIN RECORTES)
 # ==========================================
 
 def salvar(url, tipo, prefijo, ext, nombre_usuario=""):
-    url_limpia = str(url).replace("[", "").replace("]", "").replace("'", "").replace('"', "").strip()
-    if not url_limpia or not url_limpia.startswith("http"):
-        return "⚠️ URL no válida."
+    url_l = str(url).strip().replace("[","").replace("]","").replace("'","").replace('"',"")
     try:
-        if nombre_usuario and nombre_usuario.strip():
-            nombre = f"{nombre_usuario.strip()}.{ext}"
-        else:
-            nombre = f"{prefijo}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
-
+        nombre = f"{nombre_usuario.strip()}.{ext}" if nombre_usuario else f"{prefijo}_{datetime.datetime.now().strftime('%H%M%S')}.{ext}"
         ruta_final = os.path.join(RUTAS[tipo], nombre)
-        res = requests.get(url_limpia, timeout=60)
+        res = requests.get(url_l, timeout=60)
         if res.status_code == 200:
-            with open(ruta_final, 'wb') as f:
-                f.write(res.content)
+            with open(ruta_final, 'wb') as f: f.write(res.content)
             return f"✅ Guardado en: {ruta_final}"
-        return f"❌ Error descarga: {res.status_code}"
-    except Exception as e:
-        return f"❌ Error: {str(e)}"
-
+        return "❌ Error descarga"
+    except Exception as e: return f"❌ Error: {str(e)}"
 
 def analizar(path):
-    if not path or not os.path.exists(path):
-        return gr.update(maximum=100), "❌ Video no encontrado"
-    cap = cv2.VideoCapture(path)
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    cap.release()
-    return gr.update(maximum=max(0, total - 1)), f"Frames totales: {total}"
-
+    p_real = descargar_a_temp_local(path, "mp4")
+    cap = cv2.VideoCapture(p_real); total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)); cap.release()
+    return gr.update(maximum=max(0, total-1)), f"Frames totales: {total}"
 
 def snap(path, idx, modo, nombre=""):
-    if not path or not os.path.exists(path):
-        return None, "Ruta vacía"
-    cap = cv2.VideoCapture(path)
-    cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-    ret, frame = cap.read()
-    cap.release()
-    if not ret:
-        return None, "Error de lectura"
+    p_real = descargar_a_temp_local(path, "mp4")
+    cap = cv2.VideoCapture(p_real); cap.set(cv2.CAP_PROP_POS_FRAMES, idx); ret, frame = cap.read(); cap.release()
+    if not ret: return None, "Error"
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    if modo == "Ver":
-        return rgb, "Preview lista"
-    # Guardar captura
-    nombre_archivo = f"{nombre or 'cap'}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-    ruta = os.path.join(RUTAS["cap"], nombre_archivo)
-    cv2.imwrite(ruta, frame)
-    return rgb, ruta
-
+    if modo == "Ver": return rgb, "Preview lista"
+    nombre_f = f"{nombre or 'cap'}_{datetime.datetime.now().strftime('%H%M%S')}.jpg"
+    ruta_abs = os.path.join(RUTAS["cap"], nombre_f)
+    cv2.imwrite(ruta_abs, frame)
+    return rgb, os.path.join("outputs", "01_CAPTURAS", nombre_f)
 
 def _sec_from_mmss(t):
-    if isinstance(t, (int, float)):
-        return float(t)
+    if isinstance(t, (int,float)): return float(t)
     if ":" in str(t):
         parts = list(map(float, str(t).split(":")))
-        return parts[0] * 60 + parts[1]
+        return parts[0]*60 + parts[1]
     return float(t)
 
-
 def cortar_segmento(ruta, inicio, fin, nombre_salida):
-    if not ruta or not os.path.exists(ruta):
-        return "❌ Video origen no encontrado."
-    inicio_s = _sec_from_mmss(inicio)
-    fin_s = _sec_from_mmss(fin)
-    if fin_s <= inicio_s:
-        return "❌ Fin debe ser mayor que inicio."
-    os.makedirs(RUTAS["vid"], exist_ok=True)
-    nombre = (nombre_salida.strip() + ".mp4") if nombre_salida and nombre_salida.strip() else f"cut_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-    salida = os.path.join(RUTAS["vid"], nombre)
-    cmd = ["ffmpeg", "-y", "-ss", str(inicio_s), "-to", str(fin_s), "-i", ruta, "-c", "copy", salida]
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return salida
-    except subprocess.CalledProcessError as e:
-        return f"❌ Error ffmpeg: {e.stderr.decode('utf-8')[:400]}"
-
+    p_real = descargar_a_temp_local(ruta, "mp4")
+    salida = os.path.join(RUTAS["vid"], f"{nombre_salida or 'cut'}_{datetime.datetime.now().strftime('%H%M%S')}.mp4")
+    subprocess.run(["ffmpeg", "-y", "-ss", str(_sec_from_mmss(inicio)), "-to", str(_sec_from_mmss(fin)), "-i", p_real, "-c", "copy", salida], check=True)
+    return salida
 
 def unir_videos(lista_rutas, nombre_salida):
-    if not lista_rutas or not any(lista_rutas):
-        return "❌ No hay segmentos para unir."
-    tmp_list = os.path.join(BASE, "temp", "concat_list.txt")
+    tmp_list = os.path.join(TEMP_DIR, "concat_list.txt")
     with open(tmp_list, "w") as f:
         for p in lista_rutas:
-            if p and os.path.exists(p):
-                f.write(f"file '{p}'\n")
-            else:
-                return f"❌ Archivo no encontrado: {p}"
-    nombre = (nombre_salida.strip() + ".mp4") if nombre_salida and nombre_salida.strip() else f"merged_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+            p_real = descargar_a_temp_local(p, "mp4")
+            f.write(f"file '{p_real}'\n")
+    nombre = (nombre_salida.strip() + ".mp4") if nombre_salida else f"merged_{datetime.datetime.now().strftime('%H%M%S')}.mp4"
     salida = os.path.join(RUTAS["vid"], nombre)
-    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", tmp_list, "-c", "copy", salida]
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return salida
-    except subprocess.CalledProcessError as e:
-        return f"❌ Error ffmpeg: {e.stderr.decode('utf-8')[:400]}"
+    subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", tmp_list, "-c", "copy", salida], check=True)
+    return salida
 
-
-def preparar_y_subir_imagen(ruta_local):
-    """
-    En Colab subías a WaveSpeed desde /content; aquí asumimos que:
-    - Si es URL http, la usamos directamente
-    - Si es ruta local, la leemos y la subimos con cl.upload
-    """
-    if ruta_local.startswith("http"):
-        return ruta_local
-    if not os.path.exists(ruta_local):
-        raise FileNotFoundError(f"No existe el archivo: {ruta_local}")
-    img = cv2.imread(ruta_local)
-    if img is None:
-        raise ValueError(f"No es una imagen válida: {ruta_local}")
-    ruta_temp = os.path.join(BASE, "temp", "kling_upload_ready.jpg")
-    cv2.imwrite(ruta_temp, img, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
-    if not cl:
-        raise RuntimeError("Cliente WaveSpeed no configurado (WAVESPEED_API_KEY faltante).")
-    return cl.upload(ruta_temp)
-
+def partir_aut(ruta, n_partes, prefijos):
+    p_real = descargar_a_temp_local(ruta, "mp4")
+    cap = cv2.VideoCapture(p_real); fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    dur = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / fps; cap.release()
+    n = int(n_partes); seg_len = dur / n
+    prefs_list = [p.strip() for p in prefijos.split(",")] if prefijos else []
+    resultados = []
+    for i in range(n):
+        s = i * seg_len; e = (i + 1) * seg_len
+        resultados.append(cortar_segmento(p_real, s, e, prefs_list[i] if i < len(prefs_list) else f"part_{i+1}"))
+    return "\n".join(resultados)
 
 def llamar_api(modelo, prompt, entrada, duracion=5, texto_referencias="", imaginacion=5):
-    if not cl:
-        return "❌ Cliente WaveSpeed no configurado (WAVESPEED_API_KEY)."
-    if not entrada:
-        return "❌ Falta origen (Ruta o URL)"
-    val = str(entrada).strip().replace("[", "").replace("]", "").replace("'", "").replace('"', "")
-
-    # Mapeo Imaginación
+    url_input = preparar_y_subir_imagen_wavespeed(entrada)
     g_scale = 1.5 + (float(imaginacion) / 10.0) * (12.0 - 1.5)
     f_strength = 0.20 + (float(imaginacion) / 10.0) * (0.80 - 0.20)
-
-    urls_referencia = []
-    if texto_referencias and texto_referencias.strip():
-        rutas_lista = [r.strip().replace("[", "").replace("]", "").replace("'", "").replace('"', "") for r in texto_referencias.split("\n") if r.strip()]
-        for ruta_img in rutas_lista:
-            try:
-                url_subida = preparar_y_subir_imagen(ruta_img)
-                urls_referencia.append(url_subida)
-            except:
-                pass
-
     try:
         if modelo == "estilo_img":
-            img_url = preparar_y_subir_imagen(val)
-            payload = {
-                "image": img_url,
-                "prompt": prompt,
-                "strength": f_strength,
-                "guidance_scale": g_scale,
-                "num_inference_steps": 30,
-            }
-            res = cl.run("wavespeed-ai/z-image/turbo", payload)
+            res = cl.run("wavespeed-ai/z-image/turbo", {"image": url_input, "prompt": prompt, "strength": f_strength, "guidance_scale": g_scale})
         elif modelo == "video_to_video":
-            vid_url = cl.upload(val) if not val.startswith("http") else val
-            payload = {
-                "video": vid_url,
-                "prompt": prompt,
-                "strength": f_strength,
-                "resolution": "720p",
-                "duration": int(duracion),
-                "guidance_scale": g_scale,
-            }
-            if urls_referencia:
-                payload["ref_images"] = urls_referencia
-            res = cl.run("wavespeed-ai/wan-2.1/v2v-720p", payload)
-        else:  # kling_v3
-            img_url_kling = preparar_y_subir_imagen(val)
-            payload = {
-                "image": img_url_kling,
-                "prompt": prompt,
-                "duration": int(duracion),
-                "mode": "high_quality",
-                "guidance_scale": g_scale,
-            }
-            if urls_referencia:
-                payload["ref_images"] = urls_referencia
-            res = cl.run("kwaivgi/kling-v3.0-std/image-to-video", payload)
+            res = cl.run("wavespeed-ai/wan-2.1/v2v-720p", {"video": cl.upload(descargar_a_temp_local(entrada, "mp4")), "prompt": prompt, "strength": f_strength, "duration": int(duracion)})
+        else:
+            res = cl.run("kwaivgi/kling-v3.0-std/image-to-video", {"image": url_input, "prompt": prompt, "duration": int(duracion), "mode": "high_quality", "guidance_scale": g_scale})
+        out = res.get("outputs")
+        return out[0] if isinstance(out, list) else out
+    except Exception as e: raise gr.Error(f"❌ Fallo WaveSpeed: {e}")
 
-        final_url = res.get("outputs")
-        if isinstance(final_url, list):
-            final_url = final_url[0]
-        return final_url
-    except Exception as e:
-        return f"❌ Fallo API: {str(e)}"
-
+def enviar_a_web(v_id, user, resp, estilo, p_img, l_img, p_vid, l_vid, l_orig):
+    payload = {"video_id": v_id, "usuario": user, "mateo_miguel": resp, "estilizado": estilo, "prompt_imagen": p_img, "imagen_link": l_img, "prompt_video": p_vid, "drive_link": l_vid, "video_original_link": l_orig, "tipo": "registro"}
+    try:
+        r = requests.post("http://localhost:8000/api/sheets/videos/", json=payload, timeout=10)
+        return "✅ REGISTRO GUARDADO EN WEB" if r.status_code == 201 else f"❌ Error DB: {r.text}"
+    except Exception as e: return f"❌ Error conexión: {e}"
 
 # ==========================================
-# 4. INTERFAZ GRADIO (RÉPLICA SIMPLIFICADA)
+# 4. INTERFAZ (ÍNTEGRA)
 # ==========================================
 
 with gr.Blocks(title="WaveSpeed Pro", theme=gr.themes.Soft(primary_hue="orange")) as demo:
-    gr.Markdown("# 🌊 WaveSpeed Pro Workflow - Hechicer.ia")
+    m_p_i = gr.State(""); m_l_i = gr.State(""); m_p_v = gr.State(""); m_l_v = gr.State(""); m_o = gr.State("")
+    gr.Markdown("# 🌊 WaveSpeed Pro Workflow - Lead Console")
 
-    # TAB 1 - Selector
     with gr.Tab("1. Selector"):
-        v_in = gr.Textbox(label="Ruta Video (local)")
-        sli = gr.Slider(0, 100, label="Frame")
-        n_cap = gr.Textbox(label="Nombre Captura")
-        info = gr.Markdown()
-        v_in.change(analizar, v_in, [sli, info])
-        pre_f = gr.Image(label="Preview", height=300)
-        res_ruta = gr.Textbox(label="Ruta capturada para Paso 2")
-
-        btn_ver = gr.Button("🔍 Ver")
-        btn_cap = gr.Button("📸 CAPTURAR", variant="primary")
-
-        btn_ver.click(snap, [v_in, sli, gr.State("Ver"), gr.State("")], [pre_f, info])
-        btn_cap.click(snap, [v_in, sli, gr.State("CAP"), n_cap], [pre_f, res_ruta])
-
-    # TAB 2 - Estilo Imagen
-    with gr.Tab("2. Estilo Imagen"):
-        i_in = gr.Textbox(label="Ruta de Imagen (o ruta del Paso 1)")
-        p_est = gr.Textbox(label="Prompt de Estilo")
-        imag_est = gr.Slider(0, 10, value=4, step=0.1, label="🧠 Imaginación")
-        u_est = gr.Textbox(label="URL Resultado")
-        pre_est = gr.Image(height=300)
-
-        btn_gen_img = gr.Button("🎨 GENERAR IMAGEN", variant="primary")
-        btn_gen_img.click(
-            llamar_api,
-            [gr.State("estilo_img"), p_est, i_in, gr.State(5), gr.State(""), imag_est],
-            u_est
-        ).then(lambda x: x, u_est, pre_est)
-
-        name_est = gr.Textbox(label="Nombre de salida (opcional)")
-        out_save_est = gr.Textbox()
-        btn_save_est = gr.Button("💾 GUARDAR")
-        btn_save_est.click(
-            salvar,
-            [u_est, gr.State("est"), gr.State("estilo"), gr.State("png"), name_est],
-            out_save_est
-        )
-
-    # TAB 3 - Video to Video
-    with gr.Tab("3. Video-to-Video"):
-        v_vid_in = gr.Textbox(label="Ruta Video local")
-        p_trans = gr.Textbox(label="Prompt de Transformación")
-        dur_trans = gr.Slider(5, 10, value=10, label="Duración (segundos)")
-        imag_trans = gr.Slider(0, 10, value=4, step=0.1, label="🧠 Imaginación")
-        ref_trans = gr.Textbox(
-            label="Rutas de imágenes de referencia (una por línea)",
-            lines=3
-        )
-        u_trans = gr.Textbox(label="URL Video Estilizado")
-        pre_trans = gr.Video()
-
-        btn_trans = gr.Button("🪄 TRANSFORMAR", variant="primary")
-        btn_trans.click(
-            llamar_api,
-            [gr.State("video_to_video"), p_trans, v_vid_in, dur_trans, ref_trans, imag_trans],
-            u_trans
-        ).then(lambda x: x, u_trans, pre_trans)
-
-        name_trans = gr.Textbox(label="Nombre de salida (opcional)")
-        out_save_trans = gr.Textbox()
-        btn_save_trans = gr.Button("💾 GUARDAR")
-        btn_save_trans.click(
-            salvar,
-            [u_trans, gr.State("trans"), gr.State("trans"), gr.State("mp4"), name_trans],
-            out_save_trans
-        )
-
-    # TAB 4 - Kling v3.0
-    with gr.Tab("4. Kling v3.0 Standard"):
-        u_in = gr.Textbox(label="Ruta original (imagen local o URL)")
-        p_vid = gr.Textbox(label="Prompt de Movimiento")
-        dur_kling = gr.Slider(3, 10, value=10, label="Duración (segundos)")
-        imag_kling = gr.Slider(0, 10, value=5, step=0.1, label="🧠 Imaginación")
-        ref_kling = gr.Textbox(
-            label="Rutas de imágenes de referencia (una por línea - opcional)",
-            lines=3
-        )
-        u_res = gr.Textbox(label="Enlace de Video Final")
-        pre_vid = gr.Video()
-
-        btn_v_fin = gr.Button("🎥 GENERAR VIDEO LARGO", variant="primary")
-        btn_v_fin.click(
-            llamar_api,
-            [gr.State("kling_v3"), p_vid, u_in, dur_kling, ref_kling, imag_kling],
-            u_res
-        ).then(lambda x: x, u_res, pre_vid)
-
-        name_kling = gr.Textbox(label="Nombre de salida (opcional)")
-        out_save_kling = gr.Textbox()
-        btn_save_kling = gr.Button("💾 GUARDAR FINAL")
-        btn_save_kling.click(
-            salvar,
-            [u_res, gr.State("vid"), gr.State("final"), gr.State("mp4"), name_kling],
-            out_save_kling
-        )
-
-    # TAB 5 - Cortar / Unir
-    with gr.Tab("5. Cortar/Unir"):
-        src_v = gr.Textbox(label="Ruta Video Origen")
-        pre_v = gr.Video(label="Preview Origen")
-        src_v.change(lambda p: p, src_v, pre_v)
-
-        gr.Markdown("## Cortar un segmento")
+        v_in = gr.Textbox(label="URL Video Original (Google Drive o Ruta Local)")
+        v_in.change(lambda x: x, v_in, m_o)
+        sli = gr.Slider(0, 100, label="Frame"); n_cap = gr.Textbox(label="Nombre Captura"); info = gr.Markdown()
+        v_in.change(analizar, v_in, [sli, info]); pre_f = gr.Image(label="Preview", height=300); res_ruta = gr.Textbox(label="Ruta para Paso 2")
         with gr.Row():
-            inicio = gr.Textbox(label="Inicio (seg o mm:ss)", value="0")
-            fin = gr.Textbox(label="Fin (seg o mm:ss)", value="5")
-            nombre_cut = gr.Textbox(label="Nombre salida (opcional)")
-        out_cut = gr.Textbox(label="Ruta generado")
-        btn_cut = gr.Button("✂️ Cortar Segmento", variant="primary")
-        btn_cut.click(cortar_segmento, [src_v, inicio, fin, nombre_cut], out_cut)
+            gr.Button("🔍 Ver").click(snap, [v_in, sli, gr.State("Ver")], [pre_f, info])
+            gr.Button("📸 CAPTURAR", variant="primary").click(snap, [v_in, sli, gr.State("G"), n_cap], [pre_f, res_ruta])
 
-        gr.Markdown("## Unir videos")
-        seg1 = gr.Textbox(label="Ruta Parte 1")
-        seg2 = gr.Textbox(label="Ruta Parte 2 (opcional)")
-        seg3 = gr.Textbox(label="Ruta Parte 3 (opcional)")
-        name_merge = gr.Textbox(label="Nombre archivo unificado (opcional)")
-        out_merge = gr.Textbox(label="Ruta Unificado")
+    with gr.Tab("2. Estilo Imagen"):
+        i_in2 = gr.Textbox(label="URL Imagen Base"); p_est = gr.Textbox(label="Prompt de Estilo")
+        imag_est = gr.Slider(0, 10, value=4, step=0.1, label="🧠 Imaginación"); u_res2 = gr.Textbox(label="URL Resultado"); pre_est = gr.Image(height=300)
+        with gr.Row():
+            btn_gen_img = gr.Button("🎨 GENERAR IMAGEN", variant="primary")
+            btn_to_6_img = gr.Button("📥 AÑADIR A PESTAÑA 6", variant="secondary")
+        btn_gen_img.click(llamar_api, [gr.State("estilo_img"), p_est, i_in2, gr.State(5), gr.State(""), imag_est], u_res2).then(lambda x: x, u_res2, pre_est)
+        btn_to_6_img.click(lambda p, l: (p, l, "✅ Imagen enviada"), [p_est, u_res2], [m_p_i, m_l_i, gr.Textbox(label="Status")])
+        with gr.Row():
+            n_est = gr.Textbox(label="Nombre Local"); gr.Button("💾 GUARDAR LOCAL").click(salvar, [u_res2, gr.State("est"), gr.State("estilo"), gr.State("png"), n_est], gr.Textbox(label="Status"))
 
-        def unir_wrapper(a, b, c, name):
-            inputs = [x for x in [a, b, c] if x and x.strip()]
-            return unir_videos(inputs, name)
+    with gr.Tab("3. Video-to-Video"):
+        v_in3 = gr.Textbox(label="URL Video Base"); p_trans = gr.Textbox(label="Prompt"); dur_trans = gr.Slider(5, 10, value=10, label="Duración")
+        imag3 = gr.Slider(0, 10, value=4, label="Imaginación"); ref_trans = gr.Textbox(label="URLs Referencia", lines=2)
+        u_trans = gr.Textbox(label="URL Video Estilizado"); pre_trans = gr.Video()
+        gr.Button("🪄 TRANSFORMAR", variant="primary").click(llamar_api, [gr.State("video_to_video"), p_trans, v_in3, dur_trans, ref_trans, imag3], u_trans).then(lambda x: x, u_trans, pre_trans)
 
-        btn_merge = gr.Button("🔗 Unir Seleccionados", variant="primary")
-        btn_merge.click(unir_wrapper, [seg1, seg2, seg3, name_merge], out_merge)
+    with gr.Tab("4. Kling v3.0"):
+        u_in4 = gr.Textbox(label="URL Imagen"); p_vid = gr.Textbox(label="Prompt Movimiento"); dur4 = gr.Slider(3, 10, value=10, label="Duración")
+        imag4 = gr.Slider(0, 10, value=5, step=0.1, label="🧠 Imaginación"); ref_kling = gr.Textbox(label="URLs Referencia", lines=2)
+        u_res4 = gr.Textbox(label="URL Video Final"); pre_vid = gr.Video()
+        with gr.Row():
+            btn_gen_vid = gr.Button("🎥 GENERAR VIDEO", variant="primary")
+            btn_to_6_vid = gr.Button("📥 AÑADIR A PESTAÑA 6", variant="secondary")
+        btn_gen_vid.click(llamar_api, [gr.State("kling_v3"), p_vid, u_in4, dur4, ref_kling, imag4], u_res4).then(lambda x: x, u_res4, pre_vid)
+        btn_to_6_vid.click(lambda p, l: (p, l, "✅ Video enviado"), [p_vid, u_res4], [m_p_v, m_l_v, gr.Textbox(label="Status")])
 
-        gr.Markdown("Los archivos se guardan en '03_VIDEOS_FINALES' dentro de 'outputs'.")
+    with gr.Tab("5. Cortar / Unir"):
+        gr.Markdown("### Funciones FFmpeg"); src_v = gr.Textbox(label="URL Video"); pre_v = gr.Video()
+        src_v.change(descargar_a_temp_local, src_v, pre_v)
+        with gr.Row():
+            ini = gr.Textbox(label="Inicio"); fi = gr.Textbox(label="Fin"); n_c = gr.Textbox(label="Nombre")
+        gr.Button("✂️ Cortar").click(cortar_segmento, [src_v, ini, fi, n_c], gr.Textbox(label="Ruta"))
+        gr.Markdown("---"); p_n = gr.Dropdown(["2","3"], label="Partes"); prf = gr.Textbox(label="Prefijos")
+        gr.Button("🔪 Partir").click(partir_aut, [src_v, p_n, prf], gr.Textbox(label="Rutas"))
 
-if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    with gr.Tab("6. REGISTRO WEB"):
+        gr.Markdown("## 📋 Consolidación y Envío a Hechicer.ia")
+        with gr.Row():
+            miembro = gr.Textbox(label="Miembro", value="Mateo"); v_id = gr.Textbox(label="ID del Video")
+            resp = gr.Dropdown(["Mateo", "Miguel"], label="Responsable", value="Mateo"); est_nom = gr.Textbox(label="Estilo", value="Anime")
+        with gr.Row():
+            e_pi = gr.Textbox(label="Prompt Imagen"); e_li = gr.Textbox(label="Link Imagen")
+        with gr.Row():
+            e_pv = gr.Textbox(label="Prompt Video"); e_lv = gr.Textbox(label="Link Video")
+        e_orig = gr.Textbox(label="Video Original (Censo)")
+        btn_rev = gr.Button("🔍 1. REVISAR DATOS", variant="secondary")
+        btn_rev.click(lambda pi, li, pv, lv, lo: (pi, li, pv, lv, lo), [m_p_i, m_l_i, m_p_v, m_l_v, m_o], [e_pi, e_li, e_pv, e_lv, e_orig])
+        btn_send = gr.Button("🚀 2. CONFIRMAR Y GUARDAR EN WEB", variant="primary")
+        btn_send.click(enviar_a_web, [v_id, miembro, resp, est_nom, e_pi, e_li, e_pv, e_lv, e_orig], gr.Textbox(label="Estado"))
+
+demo.launch(server_name="0.0.0.0", server_port=7860)

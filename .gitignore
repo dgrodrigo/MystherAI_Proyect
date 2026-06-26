@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 venv/
 __pycache__/
 *.py[cod]
@@ -21,3 +21,6 @@ outputs/
 
 # Claude Code
 .claude/
+
+# Logs
+*.vs

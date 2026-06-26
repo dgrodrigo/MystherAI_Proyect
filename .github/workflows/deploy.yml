@@ -1,0 +1,28 @@
+name: Deploy to Cloud Run
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Build and Push Docker Image
+        run: |
+          gcloud auth configure-docker
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/mysther-ai .
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/mysther-ai
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: mysther-ai
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/mysther-ai
+          region: us-central1
+          env_vars: |
+            WAVESPEED_API_KEY=wsk_live_jotbLBG3MeaiXaTNBg5adM0tL6SeS2SAzPwDx3-sB2s
+            DJANGO_SETTINGS_MODULE=config.settings

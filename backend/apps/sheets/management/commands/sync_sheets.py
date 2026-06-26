@@ -1,67 +1,62 @@
-﻿import csv
-import os
+﻿import csv, os
 from django.core.management.base import BaseCommand
 from apps.sheets.models import VideoMetadata
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         VideoMetadata.objects.all().delete()
-        self.stdout.write("Importando datos con mapeo estricto...")
+        self.stdout.write("Limpiando y Re-importando datos reales...")
 
-        if os.path.exists('registro.csv'):
-            with open('registro.csv', mode='r', encoding='utf-8-sig') as f:
-                reader = csv.DictReader(f)
-                count = 0
-                for row in reader:
-                    # Convertimos las llaves del CSV a minúsculas y sin espacios para que NUNCA falle la búsqueda
-                    c_row = {str(k).strip().lower(): str(v).strip() for k, v in row.items() if k}
-                    
-                    v_id = c_row.get('id', '')
-                    if not v_id: continue
-                    
-                    VideoMetadata.objects.create(
-                        video_id=v_id,
-                        tipo='registro',
-                        usuario=c_row.get('miembro', ''),
-                        mateo_miguel=c_row.get('mateo/miguel', ''),
-                        estilizado=c_row.get('estilizado', ''),
-                        prompt_imagen=c_row.get('prompt imagen', ''),
-                        imagen_link=c_row.get('imagen', ''),
-                        prompt_video=c_row.get('prompt video', ''),
-                        drive_link=c_row.get('video', ''),
-                        video_original_link=c_row.get('video orginal', c_row.get('video original', '')),
-                        aceptado=c_row.get('aceptado', ''),
-                        prompt_final=c_row.get('prompt final', ''),
-                        prompt_imagen_arreglo=c_row.get('prompt imagen arreglo', ''),
-                        imagen_arreglo=c_row.get('imagen arreglo', ''),
-                        prompt_video_arreglo=c_row.get('prompt video arreglo', ''),
-                        video_arreglo=c_row.get('video arreglo', '')
-                    )
-                    count += 1
-            self.stdout.write(self.style.SUCCESS(f"OK: {count} videos de Registro importados (Con Prompts Completos)."))
+        def get_v(row, *keys):
+            for k in keys:
+                for rk, rv in row.items():
+                    if rk and rk.lower().strip() == k.lower().strip():
+                        return rv.strip()
+            return ""
 
-        if os.path.exists('censo.csv'):
-            with open('censo.csv', mode='r', encoding='utf-8-sig') as f:
+        # --- IMPORTAR REGISTRO ---
+        registro_path = 'registro.csv'
+        if os.path.exists(registro_path):
+            with open(registro_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
-                count = 0
                 for row in reader:
-                    c_row = {str(k).strip().lower(): str(v).strip() for k, v in row.items() if k}
-                    
-                    v_id = c_row.get('id de video', c_row.get('video_id', ''))
+                    v_id = get_v(row, 'Id')
                     if not v_id: continue
-                    
                     VideoMetadata.objects.create(
-                        video_id=v_id,
-                        tipo='censo',
-                        usuario=c_row.get('usuario', ''),
-                        id_video_equipo=c_row.get('id de video equipo', ''),
-                        drive_link=c_row.get('link', ''),
-                        mapa=c_row.get('mapa', ''),
-                        genero=c_row.get('genero', ''),
-                        etnia=c_row.get('etnia', ''),
-                        duracion=c_row.get('duracion', ''),
-                        camara=c_row.get('camara', ''),
-                        especie=c_row.get('especie', '')
+                        video_id=v_id, tipo='registro',
+                        usuario=get_v(row, 'Miembro'),
+                        mateo_miguel=get_v(row, 'Mateo/Miguel'),
+                        estilizado=get_v(row, 'Estilizado'),
+                        prompt_imagen=get_v(row, 'Prompt imagen'),
+                        imagen_link=get_v(row, 'imagen'),
+                        prompt_video=get_v(row, 'prompt video'),
+                        drive_link=get_v(row, 'video'),
+                        video_original_link=get_v(row, 'video orginal', 'video original'),
+                        aceptado=get_v(row, 'ACEPTADO'),
+                        prompt_final=get_v(row, 'Prompt Final'),
                     )
-                    count += 1
-            self.stdout.write(self.style.SUCCESS(f"OK: {count} videos de Censo importados."))
+            self.stdout.write("✅ Registro importado con éxito.")
+        else: self.stdout.write("❌ No se encontró registro.csv")
+
+        # --- IMPORTAR CENSO ---
+        censo_path = 'censo.csv'
+        if os.path.exists(censo_path):
+            with open(censo_path, mode='r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    v_id = get_v(row, 'ID DE VIDEO')
+                    if not v_id: continue
+                    VideoMetadata.objects.create(
+                        video_id=v_id, tipo='censo',
+                        usuario=get_v(row, 'usuario'),
+                        id_video_equipo=get_v(row, 'ID DE VIDEO EQUIPO'),
+                        drive_link=get_v(row, 'LINK'),
+                        mapa=get_v(row, 'MAPA'),
+                        genero=get_v(row, 'GENERO'),
+                        etnia=get_v(row, 'ETNIA'),
+                        duracion=get_v(row, 'DURACION'),
+                        camara=get_v(row, 'CAMARA'),
+                        especie=get_v(row, 'ESPECIE'),
+                    )
+            self.stdout.write("✅ Censo importado con éxito.")
+        else: self.stdout.write("❌ No se encontró censo.csv")
