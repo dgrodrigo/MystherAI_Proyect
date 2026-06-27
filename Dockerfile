@@ -18,4 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn whitenoise
 COPY backend/ .
 COPY --from=build-stage /frontend/dist /app/static_root
 
+RUN python manage.py collectstatic --noinput
+
 CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2"]
