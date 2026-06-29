@@ -73,6 +73,8 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 WHITENOISE_ROOT = BASE_DIR / "static_root"
 
+AUTH_USER_MODEL = "users.User"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ========== CORS ==========
