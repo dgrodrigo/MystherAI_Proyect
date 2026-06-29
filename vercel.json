@@ -2,11 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/config/wsgi.py",
-      "use": "@vercel/python",
-      "config": { "runtime": "python3.11" }
-    },
-    {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
@@ -15,15 +10,11 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/config/wsgi.py"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "frontend/dist/assets/$1"
+      "dest": "https://mystherai-proyect-18030869294.europe-west1.run.app/api/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/index.html"
+      "dest": "/index.html"
     }
   ]
 }
