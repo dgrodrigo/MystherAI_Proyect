@@ -172,7 +172,21 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
             ) : (
               videos.map(v => (
                 <div key={v.id} className="yt-card" onClick={() => { setSelectedVideo(v); setIsEditingInside(false); }}>
-                  <div className="yt-thumbnail" style={{ backgroundImage: `url(${getThumbnailUrl(v.drive_link)})` }}>
+                  <div className="yt-thumbnail">
+                    <img
+                      src={getThumbnailUrl(v.drive_link)}
+                      alt={`Video ${v.video_id}`}
+                      className="yt-thumb-img"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const fb = e.currentTarget.nextSibling;
+                        if (fb) fb.style.display = 'flex';
+                      }}
+                    />
+                    <div className="yt-thumb-fallback">
+                      <span style={{ fontSize: '30px', opacity: 0.2 }}>🎬</span>
+                      <span className="yt-thumb-id">ID: {v.video_id}</span>
+                    </div>
                     <div className="play-btn">▶</div>
                   </div>
                   <div className="yt-info">
