@@ -94,29 +94,37 @@ class Command(BaseCommand):
                 return extraer_celda(row_cells[idx],
                                      col_idx=idx if is_link else None)
 
+            skipped = 0
             for row in ws.iter_rows(min_row=2):
                 row_cells = list(row)
-                v_id = cell_val(row_cells, idx_id)
-                if not v_id:
+                v_id      = cell_val(row_cells, idx_id)
+                video_url = cell_val(row_cells, idx_vid, is_link=True)
+                img_url   = cell_val(row_cells, idx_img, is_link=True)
+                prompt    = cell_val(row_cells, idx_pv)
+
+                # Saltar filas incompletas: sin ID, sin video, sin imagen o sin prompt
+                if not v_id or not video_url or not img_url or not prompt:
+                    skipped += 1
                     continue
+
                 obj = VideoMetadata(
-                    video_id   = v_id,
-                    tipo       = 'registro',
-                    usuario    = cell_val(row_cells, idx_mb),
-                    mateo_miguel = cell_val(row_cells, idx_mm),
-                    estilizado = cell_val(row_cells, idx_est),
+                    video_id    = v_id,
+                    tipo        = 'registro',
+                    usuario     = cell_val(row_cells, idx_mb),
+                    mateo_miguel= cell_val(row_cells, idx_mm),
+                    estilizado  = cell_val(row_cells, idx_est),
                     prompt_imagen = cell_val(row_cells, idx_pi),
-                    imagen_link   = cell_val(row_cells, idx_img,  is_link=True),
-                    prompt_video  = cell_val(row_cells, idx_pv),
-                    drive_link    = cell_val(row_cells, idx_vid,  is_link=True),
+                    imagen_link = img_url,
+                    prompt_video= prompt,
+                    drive_link  = video_url,
                     video_original_link = cell_val(row_cells, idx_orig, is_link=True),
-                    aceptado   = cell_val(row_cells, idx_acep),
-                    prompt_final = cell_val(row_cells, idx_pf),
+                    aceptado    = cell_val(row_cells, idx_acep),
+                    prompt_final= cell_val(row_cells, idx_pf),
                 )
                 safe_create(obj)
                 count += 1
 
-            self.stdout.write(f"✅ Registro importado desde Sheets (XLSX): {count} filas.")
+            self.stdout.write(f"✅ Registro importado desde Sheets (XLSX): {count} filas ({skipped} incompletas omitidas).")
 
         except Exception as e:
             self.stdout.write(f"⚠️  XLSX no disponible ({e}), usando registro.csv local...")
