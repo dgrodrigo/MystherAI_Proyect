@@ -1,5 +1,6 @@
 ﻿import csv, os
 from django.core.management.base import BaseCommand
+from django.db import IntegrityError
 from apps.sheets.models import VideoMetadata
 
 class Command(BaseCommand):
@@ -14,15 +15,22 @@ class Command(BaseCommand):
                         return rv.strip()
             return ""
 
+        def safe_create(obj):
+            try:
+                obj.save()
+            except IntegrityError:
+                pass
+
         # --- IMPORTAR REGISTRO ---
         registro_path = 'registro.csv'
         if os.path.exists(registro_path):
+            count = 0
             with open(registro_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     v_id = get_v(row, 'Id')
                     if not v_id: continue
-                    VideoMetadata.objects.create(
+                    obj = VideoMetadata(
                         video_id=v_id, tipo='registro',
                         usuario=get_v(row, 'Miembro'),
                         mateo_miguel=get_v(row, 'Mateo/Miguel'),
@@ -35,18 +43,21 @@ class Command(BaseCommand):
                         aceptado=get_v(row, 'ACEPTADO'),
                         prompt_final=get_v(row, 'Prompt Final'),
                     )
-            self.stdout.write("✅ Registro importado con éxito.")
+                    safe_create(obj)
+                    count += 1
+            self.stdout.write(f"✅ Registro importado: {count} filas procesadas.")
         else: self.stdout.write("❌ No se encontró registro.csv")
 
         # --- IMPORTAR CENSO ---
         censo_path = 'censo.csv'
         if os.path.exists(censo_path):
+            count = 0
             with open(censo_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     v_id = get_v(row, 'ID DE VIDEO')
                     if not v_id: continue
-                    VideoMetadata.objects.create(
+                    obj = VideoMetadata(
                         video_id=v_id, tipo='censo',
                         usuario=get_v(row, 'usuario'),
                         id_video_equipo=get_v(row, 'ID DE VIDEO EQUIPO'),
@@ -58,5 +69,7 @@ class Command(BaseCommand):
                         camara=get_v(row, 'CAMARA'),
                         especie=get_v(row, 'ESPECIE'),
                     )
-            self.stdout.write("✅ Censo importado con éxito.")
+                    safe_create(obj)
+                    count += 1
+            self.stdout.write(f"✅ Censo importado: {count} filas procesadas.")
         else: self.stdout.write("❌ No se encontró censo.csv")

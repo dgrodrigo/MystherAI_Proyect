@@ -185,12 +185,16 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                     />
                     <div className="yt-thumb-fallback">
                       <span style={{ fontSize: '30px', opacity: 0.2 }}>🎬</span>
-                      <span className="yt-thumb-id">ID: {v.video_id}</span>
+                      <span className="yt-thumb-id">
+                        {v.tipo === 'censo' ? `#${v.id_video_equipo || v.video_id}` : `ID: ${v.video_id}`}
+                      </span>
                     </div>
                     <div className="play-btn">▶</div>
                   </div>
                   <div className="yt-info">
-                    <h3 className="yt-title" style={{ color: 'var(--neon-cyan)' }}>ID: {v.video_id}</h3>
+                    <h3 className="yt-title" style={{ color: 'var(--neon-cyan)' }}>
+                      {v.tipo === 'censo' ? `#${v.id_video_equipo || v.video_id}` : `ID: ${v.video_id}`}
+                    </h3>
                     <p className="yt-meta">{v.usuario} • <span style={{ color: 'var(--silver-mid)' }}>{v.estilizado || v.mapa}</span></p>
                   </div>
                 </div>
@@ -267,7 +271,9 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
               <div className="modal-content-details">
                 <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #333', paddingBottom: '15px' }}>
                   <h2 className="neon-cyan-text" style={{ marginRight: 'auto', margin: 0 }}>
-                    {selectedVideo.tipo === 'registro' ? 'REGISTRO:' : 'CENSO:'} {selectedVideo.video_id}
+                    {selectedVideo.tipo === 'registro'
+                      ? `REGISTRO: ${selectedVideo.video_id}`
+                      : `CENSO: #${selectedVideo.id_video_equipo || selectedVideo.video_id}`}
                   </h2>
                   {isAdmin && !isEditingInside && <button className="neon-button" style={{ borderColor: 'orange', color: 'orange', padding: '5px 15px' }} onClick={() => startEdit(selectedVideo)}>EDITAR ✎</button>}
                   {isAdmin && !isEditingInside && <button className="logout-btn" style={{ padding: '5px 15px', margin: 0, backgroundColor: 'red', color: 'white', border: 'none', cursor: 'pointer' }} onClick={() => handleDelete(selectedVideo.id)}>BORRAR 🗑</button>}
