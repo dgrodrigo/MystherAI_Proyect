@@ -12,7 +12,7 @@ class Command(BaseCommand):
             User.objects.create_superuser('admin', 'admin@hechicer.ia', 'admin123')
             self.stdout.write("Admin creado: admin / admin123")
 
-        for u in ['mateo', 'dario', 'wilson', 'rodrigo', 'david', 'omar', 'alvaro', 'laura']:
+        for u in ['mateo', 'dario', 'wilson', 'rodrigo', 'david', 'omar', 'alvaro', 'laura', 'Bruno']:
             if not User.objects.filter(username=u).exists():
                 User.objects.create_user(username=u, password=f'{u}123', is_staff=False)
                 self.stdout.write(f"Usuario {u} creado")
