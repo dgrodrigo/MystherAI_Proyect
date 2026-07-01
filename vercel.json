@@ -7,14 +7,14 @@
       "config": { "distDir": "dist" }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://mystherai-proyect-18030869294.europe-west1.run.app/api/$1"
+      "source": "/api/:path*",
+      "destination": "https://mystherai-proyect-18030869294.europe-west1.run.app/api/:path*"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
