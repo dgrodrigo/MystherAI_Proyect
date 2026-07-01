@@ -13,8 +13,9 @@ from dotenv import load_dotenv
 # 1. CONFIGURACIÓN Y CLIENTE (FIX AUTENTICACIÓN)
 # ==========================================
 load_dotenv()
-MY_KEY = "wsk_live_jotbLBG3MeaiXaTNBg5adM0tL6SeS2SAzPwDx3-sB2s" 
-os.environ["WAVESPEED_API_KEY"] = MY_KEY
+MY_KEY = os.environ.get("WAVESPEED_API_KEY", "")
+if not MY_KEY:
+    raise RuntimeError("WAVESPEED_API_KEY no está configurada en el entorno")
 cl = wavespeed.Client(api_key=MY_KEY)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -141,10 +142,12 @@ def llamar_api(modelo, prompt, entrada, duracion=5, texto_referencias="", imagin
         return out[0] if isinstance(out, list) else out
     except Exception as e: raise gr.Error(f"❌ Fallo WaveSpeed: {e}")
 
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+
 def enviar_a_web(v_id, user, resp, estilo, p_img, l_img, p_vid, l_vid, l_orig):
     payload = {"video_id": v_id, "usuario": user, "mateo_miguel": resp, "estilizado": estilo, "prompt_imagen": p_img, "imagen_link": l_img, "prompt_video": p_vid, "drive_link": l_vid, "video_original_link": l_orig, "tipo": "registro"}
     try:
-        r = requests.post("http://localhost:8000/api/sheets/videos/", json=payload, timeout=10)
+        r = requests.post(f"{BACKEND_URL}/api/sheets/videos/", json=payload, timeout=10)
         return "✅ REGISTRO GUARDADO EN WEB" if r.status_code == 201 else f"❌ Error DB: {r.text}"
     except Exception as e: return f"❌ Error conexión: {e}"
 
@@ -216,4 +219,5 @@ with gr.Blocks(title="WaveSpeed Pro", theme=gr.themes.Soft(primary_hue="orange")
         btn_send = gr.Button("🚀 2. CONFIRMAR Y GUARDAR EN WEB", variant="primary")
         btn_send.click(enviar_a_web, [v_id, miembro, resp, est_nom, e_pi, e_li, e_pv, e_lv, e_orig], gr.Textbox(label="Estado"))
 
-demo.launch(server_name="0.0.0.0", server_port=7860)
+if __name__ == "__main__":
+    demo.launch(server_name="0.0.0.0", server_port=7860)
