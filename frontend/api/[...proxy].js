@@ -1,6 +1,6 @@
 const BACKEND = 'http://mysther-ai-alb-1734290767.eu-central-1.elb.amazonaws.com';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const backendUrl = `${BACKEND}${req.url}`;
 
   const forwardHeaders = {};
@@ -25,8 +25,8 @@ export default async function handler(req, res) {
 
   const text = await upstream.text();
   res.status(upstream.status).send(text);
-}
+};
 
-export const config = {
+module.exports.config = {
   api: { bodyParser: true },
 };
