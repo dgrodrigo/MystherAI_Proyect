@@ -154,11 +154,6 @@ def enviar_a_web(v_id, user, resp, estilo, p_img, l_img, p_vid, l_vid, l_orig):
 def on_load(request: gr.Request):
     return request.query_params.get('api_key', DEFAULT_KEY)
 
-def guardar_key(key):
-    if not key or len(key.strip()) < 10:
-        return key, "❌ La API Key es demasiado corta"
-    return key.strip(), "✅ API Key guardada para esta sesión"
-
 # ==========================================
 # 4. INTERFAZ
 # ==========================================
@@ -170,13 +165,6 @@ with gr.Blocks(title="WaveSpeed Pro", theme=gr.themes.Soft(primary_hue="orange")
     demo.load(on_load, None, [api_key_state])
 
     gr.Markdown("# 🌊 WaveSpeed Pro Workflow - Lead Console")
-
-    with gr.Tab("🔑 Configuración"):
-        gr.Markdown("### API Key de WaveSpeed\nIntroduce tu clave para usar los modelos de IA. Se aplica solo a esta sesión.")
-        key_input = gr.Textbox(label="WaveSpeed API Key", type="password", placeholder="ws_xxxxxxxxxxxxxxxxxxxxxxxx", value=DEFAULT_KEY)
-        key_btn = gr.Button("💾 Guardar Key", variant="primary")
-        key_status = gr.Textbox(label="Estado", interactive=False)
-        key_btn.click(guardar_key, [key_input], [api_key_state, key_status])
 
     with gr.Tab("1. Selector"):
         v_in = gr.Textbox(label="URL Video Original (Google Drive o Ruta Local)")
