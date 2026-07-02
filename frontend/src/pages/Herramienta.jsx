@@ -64,23 +64,33 @@ const Herramienta = () => {
         }
       />
 
-      {/* Gradio directo en iframe — sin pantalla intermedia */}
+      {/* Launcher directo — botón limpio sin tarjeta */}
       {apiKey && (
-        <iframe
-          src={`http://mysther-ai-alb-1734290767.eu-central-1.elb.amazonaws.com:7860/?api_key=${encodeURIComponent(apiKey)}`}
-          style={{
-            position: "fixed",
-            top: "64px",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100%",
-            height: "calc(100vh - 64px)",
-            border: "none",
-            background: "#0a0a0a",
-          }}
-          title="MystherAI Studio"
-        />
+        <div style={{
+          position: "fixed", top: "64px", left: 0, right: 0, bottom: 0,
+          display: "flex", flexDirection: "column", alignItems: "center",
+          justifyContent: "center", gap: "20px", background: "#000",
+        }}>
+          <p style={{ color: "#333", fontSize: "11px", letterSpacing: "3px",
+            textTransform: "uppercase", margin: 0 }}>
+            MystherAI Studio
+          </p>
+          <button
+            className="neon-button"
+            style={{ padding: "14px 40px", fontSize: "13px", letterSpacing: "2px" }}
+            onClick={() =>
+              window.open(
+                `http://mysther-ai-alb-1734290767.eu-central-1.elb.amazonaws.com:7860/?api_key=${encodeURIComponent(apiKey)}`,
+                "_blank"
+              )
+            }
+          >
+            ABRIR GRADIO →
+          </button>
+          <p style={{ color: "#222", fontSize: "10px", margin: 0 }}>
+            Se abre en pestaña nueva
+          </p>
+        </div>
       )}
 
       {/* Modal de API Key */}
