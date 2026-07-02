@@ -5,6 +5,7 @@ import { useApiKey } from "../context/ApiKeyContext";
 import { useTheme } from "../context/ThemeContext";
 import AppNavbar from "../components/AppNavbar";
 import api from "../utils/api";
+import logoImg from "../assets/logo.jpeg";
 
 /**
  * Herramienta de Texturizado IA — Requiere API Key de WaveSpeed.
@@ -64,20 +65,56 @@ const Herramienta = () => {
         }
       />
 
-      {/* Launcher directo — botón limpio sin tarjeta */}
-      {apiKey && (
+      {/* ── Launcher ── */}
+      {apiKey ? (
         <div style={{
           position: "fixed", top: "64px", left: 0, right: 0, bottom: 0,
-          display: "flex", flexDirection: "column", alignItems: "center",
-          justifyContent: "center", gap: "20px", background: "#000",
+          background: "#000", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: "28px",
+          zIndex: 10,
         }}>
-          <p style={{ color: "#333", fontSize: "11px", letterSpacing: "3px",
-            textTransform: "uppercase", margin: 0 }}>
+          {/* Conejo difuminado de fondo con aura */}
+          <img
+            src={logoImg}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: "absolute", width: "420px", height: "420px",
+              objectFit: "cover", borderRadius: "50%",
+              opacity: 0.07, filter: "blur(32px) saturate(0)",
+              pointerEvents: "none", userSelect: "none",
+              boxShadow: "0 0 120px 60px rgba(255,255,255,0.06)",
+            }}
+          />
+
+          {/* Contenido sobre el fondo */}
+          <p style={{
+            position: "relative", color: "#333", fontSize: "11px",
+            letterSpacing: "4px", textTransform: "uppercase", margin: 0,
+          }}>
             MystherAI Studio
           </p>
+
           <button
-            className="neon-button"
-            style={{ padding: "14px 40px", fontSize: "13px", letterSpacing: "2px" }}
+            style={{
+              position: "relative",
+              padding: "18px 56px",
+              fontSize: "15px",
+              fontWeight: "700",
+              letterSpacing: "3px",
+              textTransform: "uppercase",
+              background: "#fff",
+              color: "#000",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              transition: "background 0.2s, transform 0.1s",
+              zIndex: 20,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#d4d4d4"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
             onClick={() =>
               window.open(
                 `http://mysther-ai-alb-1734290767.eu-central-1.elb.amazonaws.com:7860/?api_key=${encodeURIComponent(apiKey)}`,
@@ -87,15 +124,15 @@ const Herramienta = () => {
           >
             ABRIR GRADIO →
           </button>
-          <p style={{ color: "#222", fontSize: "10px", margin: 0 }}>
+
+          <p style={{ position: "relative", color: "#222", fontSize: "10px", margin: 0 }}>
             Se abre en pestaña nueva
           </p>
         </div>
-      )}
-
-      {/* Modal de API Key */}
-      <div style={s.toolArea}>
-        {showModal && (
+      ) : (
+        /* ── Modal de API Key ── */
+        <div style={s.toolArea}>
+          {showModal && (
           <div style={s.modalOverlay}>
             <div style={s.modalCard}>
               {/* Encabezado del modal */}
@@ -167,8 +204,10 @@ const Herramienta = () => {
 
             </div>
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 };
