@@ -2,355 +2,180 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApiKey } from '../context/ApiKeyContext';
 import AppNavbar from '../components/AppNavbar';
-import logoImg from '../assets/logo.jpeg';
 
-const NAV = [
+/*
+  Naming rationale (inspired by SaaS object-oriented nav best practices):
+  - Catálogo   = raw recordings catalog with metadata (INPUT)
+  - Biblioteca = AI-stylized recordings library (OUTPUT)
+  - Panorama   = bird's-eye metrics of the catalog (INPUT ANALYTICS)
+  - Análisis   = deep metrics of stylized outputs (OUTPUT ANALYTICS)
+  - Estudio    = Gradio AI engine (MOTOR)
+*/
+const PIPELINE = [
   {
-    id: 'censo',
-    ruta: '/censo',
-    step: '01',
-    tag: 'DATOS RAW',
-    titulo: 'Censo',
-    desc: 'Grabaciones originales con metadatos de cámara, especie, mapa y duración.',
-    side: 'in',
+    pair: 'DATOS',
+    in:  { id:'censo',        ruta:'/censo',         step:'01', tag:'ARCHIVO ORIGINAL', titulo:'Catálogo',  desc:'Grabaciones originales catalogadas con metadatos: cámara, especie, mapa y duración.' },
+    out: { id:'registro',     ruta:'/registro',      step:'02', tag:'VERSIONES IA',      titulo:'Biblioteca', desc:'Versiones estilizadas con IA: prompts, estilos aplicados y parámetros por miembro.' },
   },
   {
-    id: 'registro',
-    ruta: '/registro',
-    step: '02',
-    tag: 'ESTILIZADOS',
-    titulo: 'Registro',
-    desc: 'Versiones transformadas con prompt de IA, estilo y parámetros por miembro.',
-    side: 'out',
-  },
-  {
-    id: 'resumen',
-    ruta: '/resumen',
-    step: '03',
-    tag: 'ANALYTICS · ENTRADA',
-    titulo: 'Resumen',
-    desc: 'Distribución del censo por especie, mapa, cámara y aspectos técnicos.',
-    side: 'in',
-  },
-  {
-    id: 'estadisticas',
-    ruta: '/estadisticas',
-    step: '04',
-    tag: 'ANALYTICS · SALIDA',
-    titulo: 'Estadísticas',
-    desc: 'Balance de estilizados: Anime, Cartoon, Lego y Ciberpunk por fase.',
-    side: 'out',
+    pair: 'ANALYTICS',
+    in:  { id:'resumen',      ruta:'/resumen',       step:'03', tag:'MÉTRICAS · ORIGEN', titulo:'Panorama',  desc:'Vista general del catálogo: distribución por especie, mapa, cámara y técnica.' },
+    out: { id:'estadisticas', ruta:'/estadisticas',  step:'04', tag:'MÉTRICAS · SALIDA', titulo:'Análisis',  desc:'Rendimiento de los estilizados: balance por estilo, fase y miembro del equipo.' },
   },
 ];
 
-const S = {
-  page: {
-    minHeight: '100vh',
-    background: '#000',
-    fontFamily: "'Inter', sans-serif",
-  },
-  wrap: {
-    maxWidth: '1100px',
-    margin: '0 auto',
-    padding: '80px 32px 48px',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    marginBottom: '56px',
-  },
-  logo: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '10px',
-    objectFit: 'cover',
-    flexShrink: 0,
-  },
-  headerText: { display: 'flex', flexDirection: 'column', gap: '2px' },
-  title: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: '1px',
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: '11px',
-    color: '#333',
-    letterSpacing: '3px',
-    textTransform: 'uppercase',
-    margin: 0,
-  },
-  logoutBtn: {
-    marginLeft: 'auto',
-    background: 'transparent',
-    border: '1px solid #1a1a1a',
-    color: '#333',
-    padding: '8px 18px',
-    borderRadius: '6px',
-    fontSize: '11px',
-    letterSpacing: '1.5px',
-    textTransform: 'uppercase',
-    cursor: 'pointer',
-    transition: 'border-color 0.2s, color 0.2s',
-  },
-  sectionLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    marginBottom: '16px',
-  },
-  sectionText: {
-    fontSize: '10px',
-    color: '#2a2a2a',
-    letterSpacing: '3px',
-    textTransform: 'uppercase',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-  },
-  sectionLine: {
-    flex: 1,
-    height: '1px',
-    background: '#111',
-  },
-  pipeRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 56px 1fr',
-    gap: '0',
-    marginBottom: '12px',
-    alignItems: 'stretch',
-  },
-  card: {
-    background: '#080808',
-    border: '1px solid #141414',
-    borderRadius: '10px',
-    padding: '28px 28px 24px',
-    cursor: 'pointer',
-    transition: 'border-color 0.2s, background 0.2s',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  cardOut: {
-    background: '#0a0a0a',
-    borderColor: '#1c1c1c',
-  },
-  stepNum: {
-    fontSize: '72px',
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.025)',
-    lineHeight: '1',
-    position: 'absolute',
-    top: '10px',
-    right: '18px',
-    userSelect: 'none',
-    fontVariantNumeric: 'tabular-nums',
-  },
-  tag: {
-    display: 'inline-block',
-    fontSize: '9px',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    fontWeight: '700',
-    color: '#2a2a2a',
-    marginBottom: '14px',
-  },
-  tagOut: { color: '#3a3a3a' },
-  cardTitle: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#e8e8e8',
-    margin: '0 0 8px',
-    letterSpacing: '-0.3px',
-  },
-  cardDesc: {
-    fontSize: '13px',
-    color: '#444',
-    lineHeight: '1.6',
-    margin: '0 0 20px',
-  },
-  cardArrow: {
-    fontSize: '13px',
-    color: '#2a2a2a',
-  },
-  arrowCol: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrowSvg: {
-    color: '#1c1c1c',
-  },
-  toolCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '24px',
-    background: '#080808',
-    border: '1px solid #1a1a1a',
-    borderRadius: '10px',
-    padding: '22px 28px',
-    cursor: 'pointer',
-    transition: 'border-color 0.2s, background 0.2s',
-    marginTop: '12px',
-  },
-  toolNum: {
-    fontSize: '11px',
-    fontWeight: '700',
-    color: '#1c1c1c',
-    letterSpacing: '2px',
-    minWidth: '24px',
-  },
-  toolBody: { flex: 1 },
-  toolTag: {
-    fontSize: '9px',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    color: '#2a2a2a',
-    fontWeight: '700',
-    display: 'block',
-    marginBottom: '4px',
-  },
-  toolTitle: {
-    fontSize: '17px',
-    fontWeight: '700',
-    color: '#e8e8e8',
-    margin: '0 0 4px',
-  },
-  toolDesc: {
-    fontSize: '12px',
-    color: '#3a3a3a',
-    margin: 0,
-  },
-  toolArrow: { fontSize: '16px', color: '#222' },
+const MOTOR = {
+  id: 'herramienta',
+  ruta: '/herramienta',
+  step: '05',
+  tag: 'MOTOR IA · WAVESPEED',
+  titulo: 'Estudio',
+  desc: 'Transformación V2V · Estilizado I2I · Edición con WAN 2.7, LTX 2-19B y Seedance 2.0.',
 };
 
-const PipeCard = ({ item, onClick }) => {
-  const [hover, setHover] = React.useState(false);
-  const isOut = item.side === 'out';
+/* ─── tiny reusable components ─────────────────────────────── */
+const Divider = ({ label }) => (
+  <div style={{ display:'flex', alignItems:'center', gap:'12px', margin:'28px 0 14px' }}>
+    <span style={{ fontSize:'9px', color:'#252525', letterSpacing:'3px', textTransform:'uppercase', fontWeight:'700', whiteSpace:'nowrap' }}>{label}</span>
+    <div style={{ flex:1, height:'1px', background:'#111' }} />
+  </div>
+);
+
+const Arrow = () => (
+  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px' }}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M5 12h14M13 6l6 6-6 6" stroke="#1e1e1e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </div>
+);
+
+const PipeCard = ({ item, isOut, onClick }) => {
+  const [hov, setHov] = React.useState(false);
   return (
     <div
       onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        ...S.card,
-        ...(isOut ? S.cardOut : {}),
-        borderColor: hover ? (isOut ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)') : (isOut ? '#1c1c1c' : '#141414'),
-        background: hover ? '#0f0f0f' : (isOut ? '#0a0a0a' : '#080808'),
-      }}
-      role="button"
-      tabIndex={0}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      role="button" tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      style={{
+        flex: 1,
+        background: hov ? '#0e0e0e' : '#080808',
+        border: `1px solid ${hov ? 'rgba(255,255,255,0.14)' : (isOut ? '#181818' : '#131313')}`,
+        borderRadius: '10px',
+        padding: '22px 24px 18px',
+        cursor: 'pointer',
+        transition: 'border-color .18s, background .18s',
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: '150px',
+      }}
     >
-      <span style={S.stepNum}>{item.step}</span>
-      <span style={{ ...S.tag, ...(isOut ? S.tagOut : {}) }}>{item.tag}</span>
-      <h2 style={S.cardTitle}>{item.titulo}</h2>
-      <p style={S.cardDesc}>{item.desc}</p>
-      <span style={{ ...S.cardArrow, color: hover ? '#555' : '#2a2a2a' }}>→</span>
+      {/* Watermark number */}
+      <span style={{
+        position:'absolute', top:'6px', right:'14px',
+        fontSize:'64px', fontWeight:'800', lineHeight:'1',
+        color:'rgba(255,255,255,0.028)', userSelect:'none', fontVariantNumeric:'tabular-nums',
+      }}>{item.step}</span>
+
+      <span style={{ fontSize:'9px', letterSpacing:'2px', textTransform:'uppercase', fontWeight:'700', color: isOut ? '#2e2e2e' : '#252525', display:'block', marginBottom:'10px' }}>
+        {item.tag}
+      </span>
+      <h2 style={{ fontSize:'20px', fontWeight:'700', color:'#e0e0e0', margin:'0 0 6px', letterSpacing:'-0.2px' }}>
+        {item.titulo}
+      </h2>
+      <p style={{ fontSize:'12px', color:'#3a3a3a', lineHeight:'1.65', margin:'0 0 16px', maxWidth:'340px' }}>
+        {item.desc}
+      </p>
+      <span style={{ fontSize:'12px', color: hov ? '#484848' : '#252525', transition:'color .18s' }}>→</span>
     </div>
   );
 };
 
+/* ─── Dashboard ─────────────────────────────────────────────── */
 const Dashboard = () => {
-  const navigate = useNavigate();
+  const navigate   = useNavigate();
   const { clearApiKey } = useApiKey();
 
-  const handleLogout = () => { clearApiKey(); navigate('/'); };
-
-  const pairs = [
-    { label: 'DATOS', items: [NAV[0], NAV[1]] },
-    { label: 'ANALYTICS', items: [NAV[2], NAV[3]] },
-  ];
+  const [motorHov, setMotorHov] = React.useState(false);
 
   return (
-    <div style={S.page}>
+    <div style={{ minHeight:'100vh', background:'#000', fontFamily:"'Inter',sans-serif" }}>
       <AppNavbar />
-      <div style={S.wrap}>
 
-        {/* Header */}
-        <header style={S.header}>
-          <img src={logoImg} alt="MystherAI" style={S.logo} />
-          <div style={S.headerText}>
-            <h1 style={S.title}>MystherAI</h1>
-            <p style={S.subtitle}>Pipeline de Producción · Fase 2</p>
+      <div style={{ maxWidth:'1060px', margin:'0 auto', padding:'28px 36px 48px' }}>
+
+        {/* Page meta — no logo (already in navbar), just context + logout */}
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:'4px' }}>
+          <div>
+            <p style={{ margin:0, fontSize:'11px', color:'#222', letterSpacing:'3px', textTransform:'uppercase' }}>
+              Pipeline de Producción · Fase 2
+            </p>
           </div>
           <button
-            style={S.logoutBtn}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#888'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.color = '#333'; }}
-            onClick={handleLogout}
+            onClick={() => { clearApiKey(); navigate('/'); }}
+            style={{
+              background:'transparent', border:'none', cursor:'pointer',
+              fontSize:'11px', color:'#1e1e1e', letterSpacing:'1.5px', textTransform:'uppercase',
+              padding:'4px 0', transition:'color .2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#555'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#1e1e1e'; }}
           >
-            Salir
+            Salir →
           </button>
-        </header>
-
-        {/* Column headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 56px 1fr', marginBottom: '10px' }}>
-          <div style={{ fontSize: '9px', color: '#1e1e1e', letterSpacing: '3px', textTransform: 'uppercase', fontWeight: '700', paddingLeft: '4px' }}>
-            ENTRADA
-          </div>
-          <div />
-          <div style={{ fontSize: '9px', color: '#1e1e1e', letterSpacing: '3px', textTransform: 'uppercase', fontWeight: '700', paddingLeft: '4px' }}>
-            SALIDA
-          </div>
         </div>
 
-        {/* Pipeline pairs */}
-        {pairs.map(({ label, items }) => (
-          <div key={label}>
-            {/* Section divider */}
-            <div style={S.sectionLabel}>
-              <span style={S.sectionText}>{label}</span>
-              <div style={S.sectionLine} />
-            </div>
+        {/* Column headers */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 44px 1fr', marginTop:'24px', marginBottom:'2px', paddingLeft:'2px' }}>
+          <span style={{ fontSize:'9px', color:'#1a1a1a', letterSpacing:'3px', textTransform:'uppercase', fontWeight:'700' }}>ENTRADA</span>
+          <span />
+          <span style={{ fontSize:'9px', color:'#1a1a1a', letterSpacing:'3px', textTransform:'uppercase', fontWeight:'700' }}>SALIDA</span>
+        </div>
 
-            <div style={S.pipeRow}>
-              <PipeCard item={items[0]} onClick={() => navigate(items[0].ruta)} />
-
-              {/* Arrow connector */}
-              <div style={S.arrowCol}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={S.arrowSvg}>
-                  <path d="M5 12h14M13 6l6 6-6 6" stroke="#1c1c1c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-
-              <PipeCard item={items[1]} onClick={() => navigate(items[1].ruta)} />
+        {/* Pairs */}
+        {PIPELINE.map(({ pair, in: left, out: right }) => (
+          <div key={pair}>
+            <Divider label={pair} />
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 44px 1fr', alignItems:'stretch' }}>
+              <PipeCard item={left}  isOut={false} onClick={() => navigate(left.ruta)} />
+              <Arrow />
+              <PipeCard item={right} isOut={true}  onClick={() => navigate(right.ruta)} />
             </div>
           </div>
         ))}
 
-        {/* Engine — full width */}
-        <div style={{ marginTop: '8px' }}>
-          <div style={S.sectionLabel}>
-            <span style={S.sectionText}>MOTOR IA</span>
-            <div style={S.sectionLine} />
+        {/* Motor — full width horizontal */}
+        <Divider label="HERRAMIENTA" />
+        <div
+          onClick={() => navigate(MOTOR.ruta)}
+          onMouseEnter={() => setMotorHov(true)}
+          onMouseLeave={() => setMotorHov(false)}
+          role="button" tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate(MOTOR.ruta)}
+          style={{
+            display:'flex', alignItems:'center', gap:'20px',
+            background: motorHov ? '#0e0e0e' : '#080808',
+            border: `1px solid ${motorHov ? 'rgba(255,255,255,0.14)' : '#181818'}`,
+            borderRadius:'10px', padding:'18px 24px',
+            cursor:'pointer', transition:'border-color .18s, background .18s',
+          }}
+        >
+          <span style={{ fontSize:'10px', fontWeight:'700', color:'#1c1c1c', letterSpacing:'2px', minWidth:'22px' }}>
+            {MOTOR.step}
+          </span>
+          <div style={{ flex:1 }}>
+            <span style={{ fontSize:'9px', letterSpacing:'2px', textTransform:'uppercase', color:'#252525', fontWeight:'700', display:'block', marginBottom:'3px' }}>
+              {MOTOR.tag}
+            </span>
+            <h2 style={{ fontSize:'17px', fontWeight:'700', color:'#e0e0e0', margin:'0 0 3px' }}>
+              {MOTOR.titulo}
+            </h2>
+            <p style={{ fontSize:'12px', color:'#333', margin:0 }}>
+              {MOTOR.desc}
+            </p>
           </div>
-
-          {React.createElement(
-            'div',
-            {
-              style: S.toolCard,
-              onClick: () => navigate('/herramienta'),
-              onMouseEnter: (e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                e.currentTarget.style.background = '#0f0f0f';
-              },
-              onMouseLeave: (e) => {
-                e.currentTarget.style.borderColor = '#1a1a1a';
-                e.currentTarget.style.background = '#080808';
-              },
-              role: 'button',
-              tabIndex: 0,
-              onKeyDown: (e) => e.key === 'Enter' && navigate('/herramienta'),
-            },
-            React.createElement('span', { style: S.toolNum }, '05'),
-            React.createElement('div', { style: S.toolBody },
-              React.createElement('span', { style: S.toolTag }, 'MOTOR IA · WAVESPEED'),
-              React.createElement('h2', { style: S.toolTitle }, 'Servidor Gradio'),
-              React.createElement('p', { style: S.toolDesc }, 'Transformación V2V · Estilizado I2I · Edición de video con modelos WAN 2.7, LTX y Seedance.')
-            ),
-            React.createElement('span', { style: S.toolArrow }, '→')
-          )}
+          <span style={{ fontSize:'14px', color: motorHov ? '#444' : '#1e1e1e', transition:'color .18s' }}>→</span>
         </div>
 
       </div>
