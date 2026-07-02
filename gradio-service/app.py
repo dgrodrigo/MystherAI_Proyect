@@ -245,13 +245,28 @@ def send_registro(v_id, usuario, mm, estilo, p_img, l_img, p_vid, l_vid, l_orig)
 # ── CSS ───────────────────────────────────────────────────────────────────────
 CSS = """
 footer { display:none !important; }
-.gradio-container { background:#0a0a0a !important; max-width:1080px !important; margin:auto; }
+
+/* ── Fill the full screen — no max-width cap ── */
+body, html { background:#0a0a0a !important; margin:0 !important; padding:0 !important; }
+.gradio-container, .gradio-container > div, .main {
+    background:#0a0a0a !important;
+    max-width:100% !important;
+    width:100% !important;
+    margin:0 !important;
+    padding-left:40px !important;
+    padding-right:40px !important;
+    box-sizing:border-box !important;
+}
+/* Collapse hidden components — don't leave blank holes */
+.hidden, [style*="display: none"], [style*="display:none"] {
+    display:none !important; height:0 !important; overflow:hidden !important;
+}
 
 /* tabs */
 .tab-nav { background:#0a0a0a !important; border-bottom:1px solid #1c1c1c !important; }
 .tab-nav button {
     color:#3a3a3a !important; font-size:11px !important; letter-spacing:2px !important;
-    text-transform:uppercase !important; padding:12px 14px !important;
+    text-transform:uppercase !important; padding:12px 18px !important;
     border-radius:0 !important; border-bottom:2px solid transparent !important;
     background:transparent !important; font-weight:600 !important;
 }
@@ -318,7 +333,7 @@ hr { border:none; border-top:1px solid #1c1c1c; margin:18px 0; }
 """
 
 # ── UI ────────────────────────────────────────────────────────────────────────
-with gr.Blocks(title="Hechicer.ia Studio", css=CSS, theme=gr.themes.Base()) as demo:
+with gr.Blocks(title="MystherAI Studio", css=CSS, theme=gr.themes.Base(), fill_height=True) as demo:
     api_key_st = gr.State(DEFAULT_KEY)
     demo.load(on_load, None, api_key_st)
 
