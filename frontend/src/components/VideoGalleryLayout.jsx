@@ -178,9 +178,15 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                       alt={`Video ${v.video_id}`}
                       className="yt-thumb-img"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const fb = e.currentTarget.nextSibling;
-                        if (fb) fb.style.display = 'flex';
+                        const el = e.currentTarget;
+                        if (el.dataset.tried !== 'imagen' && v.imagen_link && extractDriveID(v.imagen_link)) {
+                          el.dataset.tried = 'imagen';
+                          el.src = getThumbnailUrl(v.imagen_link);
+                        } else {
+                          el.style.display = 'none';
+                          const fb = el.nextSibling;
+                          if (fb) fb.style.display = 'flex';
+                        }
                       }}
                     />
                     <div className="yt-thumb-fallback">
@@ -349,9 +355,21 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                         )}
                         {selectedVideo.prompt_imagen && <div className="detail-section full-width"><label style={{ color: 'gray' }}>PROMPT IMAGEN</label><p className="full-text">{selectedVideo.prompt_imagen}</p></div>}
                         {selectedVideo.video_original_link && (
-                          <div className="detail-section">
-                            <label style={{ color: 'gray' }}>VIDEO ORIGINAL</label><br />
-                            <button onClick={() => handleOpenOriginalVideoRegistro(selectedVideo.video_original_link)} className="neon-button neon-link-btn" style={{ marginTop: '10px' }}>ABRIR VIDEO ORIGINAL</button>
+                          <div className="detail-section full-width">
+                            <label style={{ color: 'gray' }}>VIDEO ORIGINAL</label>
+                            {getEmbedUrl(selectedVideo.video_original_link) ? (
+                              <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                <iframe
+                                  src={getEmbedUrl(selectedVideo.video_original_link)}
+                                  width="100%" height="320px"
+                                  allow="autoplay; fullscreen"
+                                  style={{ border: 'none', display: 'block' }}
+                                  title="Video Original"
+                                />
+                              </div>
+                            ) : (
+                              <button onClick={() => window.open(selectedVideo.video_original_link, '_blank')} className="neon-button neon-link-btn" style={{ marginTop: '10px' }}>ABRIR VIDEO ORIGINAL</button>
+                            )}
                           </div>
                         )}
                       </>

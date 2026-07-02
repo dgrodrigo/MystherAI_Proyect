@@ -44,7 +44,10 @@ class Command(BaseCommand):
 
             def extraer_celda(cell, col_idx=None):
                 """Extrae el valor de la celda; para columnas de URL usa el hipervínculo."""
-                val   = cell.value
+                val = cell.value
+                # openpyxl lee números enteros como float (161 → 161.0); convertir
+                if isinstance(val, float) and val.is_integer():
+                    val = int(val)
                 texto = str(val).strip() if val is not None else ''
                 if texto.lower() in ('none', ''):
                     texto = ''
