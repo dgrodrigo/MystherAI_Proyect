@@ -51,7 +51,6 @@ const Herramienta = () => {
 
   return (
     <div style={s.root}>
-      {/* Navbar global con botón de tema */}
       <AppNavbar
         backTo="/dashboard"
         backLabel="Dashboard"
@@ -65,37 +64,27 @@ const Herramienta = () => {
         }
       />
 
-      {/* Área de la herramienta */}
-      <div style={s.toolArea}>
-        {/* Launcher de WaveSpeed (abre en nueva pestaña con la key cargada) */}
-        {apiKey && (
-          <div style={s.launchArea}>
-            <div style={s.launchCard}>
-              <div style={s.launchIcon}>🌊</div>
-              <h2 style={s.launchTitle}>WaveSpeed Pro</h2>
-              <p style={s.launchSubtitle}>
-                La herramienta se abre en una nueva pestaña con tu API Key cargada automáticamente.
-              </p>
-              <button
-                className="neon-button"
-                style={{ padding: "14px 32px", fontSize: "15px" }}
-                onClick={() =>
-                  window.open(
-                    `http://mysther-ai-alb-1734290767.eu-central-1.elb.amazonaws.com:7860/?api_key=${encodeURIComponent(apiKey)}`,
-                    "_blank"
-                  )
-                }
-              >
-                Abrir herramienta WaveSpeed →
-              </button>
-              <p style={s.launchHint}>
-                Se abrirá en una nueva pestaña con tu sesión activa.
-              </p>
-            </div>
-          </div>
-        )}
+      {/* Gradio directo en iframe — sin pantalla intermedia */}
+      {apiKey && (
+        <iframe
+          src={`http://mysther-ai-alb-1734290767.eu-central-1.elb.amazonaws.com:7860/?api_key=${encodeURIComponent(apiKey)}`}
+          style={{
+            position: "fixed",
+            top: "64px",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100%",
+            height: "calc(100vh - 64px)",
+            border: "none",
+            background: "#0a0a0a",
+          }}
+          title="MystherAI Studio"
+        />
+      )}
 
-        {/* Modal de API Key */}
+      {/* Modal de API Key */}
+      <div style={s.toolArea}>
         {showModal && (
           <div style={s.modalOverlay}>
             <div style={s.modalCard}>

@@ -180,14 +180,20 @@ const VideoGalleryLayout = ({ tipo, titulo }) => {
                     overflow: 'hidden',
                     position: 'relative',
                   }}>
-                    {/* Fill */}
-                    <div style={{
-                      position: 'absolute', left: 0, top: 0, bottom: 0,
-                      width: `${battPct}%`,
-                      background: 'linear-gradient(90deg, #15803d, #22c55e)',
-                      borderRadius: '3px 0 0 3px',
-                      transition: 'width 1s ease',
-                    }} />
+                    {/* Fill with shimmer animation */}
+                    <div
+                      className="batt-fill"
+                      style={{
+                        position: 'absolute', left: 0, top: 0, bottom: 0,
+                        width: `${battPct}%`,
+                        background: 'linear-gradient(90deg, #15803d, #22c55e)',
+                        borderRadius: '3px 0 0 3px',
+                        transition: 'width 1.2s ease',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div className="batt-shimmer" />
+                    </div>
                     {/* Percentage label centered over bar */}
                     <span style={{
                       position: 'absolute', inset: 0,

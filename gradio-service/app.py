@@ -3,7 +3,7 @@
 # HECHICER.IA STUDIO — AI Video Production Console
 # Models: WAN 2.1 V2V 720p · Seedance 2.0 Video Edit · Kling V2.6 Motion
 # ════════════════════════════════════════════════════════════════════════════
-import os, re, datetime, subprocess
+import os, re, datetime, subprocess, base64
 import requests as req
 import cv2
 import wavespeed
@@ -11,6 +11,17 @@ import gradio as gr
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Logo — encode once at startup; degrades gracefully if file missing
+_LOGO_B64  = ""
+_logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.jpeg")
+if os.path.exists(_logo_path):
+    with open(_logo_path, "rb") as _f:
+        _LOGO_B64 = base64.b64encode(_f.read()).decode()
+_LOGO_IMG = (
+    f'<img src="data:image/jpeg;base64,{_LOGO_B64}" '
+    'style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0;" />'
+) if _LOGO_B64 else ''
 
 DEFAULT_KEY = os.environ.get("WAVESPEED_API_KEY", "")
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
@@ -311,13 +322,12 @@ with gr.Blocks(title="Hechicer.ia Studio", css=CSS, theme=gr.themes.Base()) as d
     api_key_st = gr.State(DEFAULT_KEY)
     demo.load(on_load, None, api_key_st)
 
-    gr.HTML("""
-    <div style="padding:20px 0 10px;border-bottom:1px solid #1c1c1c;margin-bottom:2px;">
-      <div style="font-size:17px;font-weight:800;letter-spacing:3px;color:#fff;">
-        HECHICER<span style="color:#fff;">.IA</span> STUDIO
-      </div>
-      <div style="font-size:10px;color:#444;letter-spacing:3px;text-transform:uppercase;margin-top:3px;">
-        AI Video Production Console — WaveSpeed
+    gr.HTML(f"""
+    <div style="display:flex;align-items:center;gap:14px;padding:16px 0 14px;border-bottom:1px solid #1c1c1c;margin-bottom:4px;">
+      {_LOGO_IMG}
+      <div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:2px;color:#fff;line-height:1.1;">MYSTHERIAI</div>
+        <div style="font-size:10px;color:#444;letter-spacing:3px;text-transform:uppercase;margin-top:3px;">AI Video Production Studio — WaveSpeed</div>
       </div>
     </div>
     """)
@@ -328,40 +338,38 @@ with gr.Blocks(title="Hechicer.ia Studio", css=CSS, theme=gr.themes.Base()) as d
         with gr.Tab("01  CARGAR"):
             src_radio = gr.Radio(
                 ["Archivo Local", "URL de Drive / Web"],
-                value="Archivo Local", label="Fuente de Video",
+                value="Archivo Local", label="Fuente",
             )
-            with gr.Row():
-                local_vid = gr.Video(label="Subir Video", sources=["upload"], scale=2)
-                url_vid   = gr.Textbox(label="URL del Video (Google Drive, HTTP...)", scale=2, visible=False)
-            url_preview = gr.HTML("")
+            local_vid = gr.Video(label="Video", sources=["upload"], visible=True, height=220)
+            url_vid   = gr.Textbox(label="URL del Video (Google Drive o HTTP)", visible=False, lines=1)
 
             with gr.Row():
                 btn_analyze = gr.Button("ANALIZAR VIDEO", variant="primary", scale=1)
-                info_out    = gr.Textbox(label="Info", interactive=False, scale=3, lines=1)
-
-            frame_sl = gr.Slider(0, 999, value=0, step=1, label="Frame")
+                info_out    = gr.Textbox(label="Info del Video", interactive=False, scale=4, lines=1)
 
             with gr.Row():
+                frame_sl   = gr.Slider(0, 999, value=0, step=1, label="Frame", scale=4)
                 frame_name = gr.Textbox(label="Nombre de la Captura", scale=2)
-                btn_prev   = gr.Button("VER FRAME", variant="secondary", scale=1)
-                btn_snap   = gr.Button("CAPTURAR Y GUARDAR", variant="primary", scale=1)
 
             with gr.Row():
-                frame_out  = gr.Image(label="Frame", height=300, scale=2)
-                frame_path = gr.Textbox(label="Ruta guardada", interactive=False, lines=3, scale=1)
+                btn_prev = gr.Button("VER FRAME", variant="secondary", scale=1)
+                btn_snap = gr.Button("CAPTURAR Y GUARDAR", variant="primary", scale=2)
+
+            with gr.Row():
+                frame_out  = gr.Image(label="Frame Capturado", height=280, scale=2)
+                frame_path = gr.Textbox(label="Ruta guardada", interactive=False, lines=4, scale=1)
 
             src_radio.change(
                 lambda t: (gr.update(visible=t == "Archivo Local"),
                            gr.update(visible=t == "URL de Drive / Web")),
                 src_radio, [local_vid, url_vid],
             )
-            url_vid.change(lambda u: drive_embed(u, 260), url_vid, url_preview)
             btn_analyze.click(do_analyze, [local_vid, url_vid], [frame_sl, info_out])
             btn_prev.click(do_snap, [local_vid, url_vid, frame_sl, gr.State(False), frame_name], [frame_out, frame_path])
             btn_snap.click(do_snap, [local_vid, url_vid, frame_sl, gr.State(True),  frame_name], [frame_out, frame_path])
 
-        # ── 02  ESTILIZAR IMAGEN ──────────────────────────────────────────────
-        with gr.Tab("02  ESTILIZAR"):
+        # ── 02  I2I — IMAGEN A IMAGEN ────────────────────────────────────────
+        with gr.Tab("02  I2I"):
             with gr.Row():
                 with gr.Column(scale=1):
                     img_base    = gr.Image(label="Imagen Base", type="filepath", height=280)
@@ -470,69 +478,8 @@ with gr.Blocks(title="Hechicer.ia Studio", css=CSS, theme=gr.themes.Base()) as d
                 v2v_reg_st,
             )
 
-        # ── 04  MOTION CONTROL ───────────────────────────────────────────────
-        with gr.Tab("04  MOTION"):
-            gr.HTML('<div style="font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;">IMAGEN + VIDEO → Transferencia de movimiento — Kling V2.6</div>')
-
-            with gr.Row():
-                with gr.Column(scale=1):
-                    mc_img = gr.Image(label="Imagen del Personaje (quien se animará)",
-                                      type="filepath", height=260)
-                with gr.Column(scale=1):
-                    mc_url   = gr.Textbox(label="URL Video de Movimiento (referencia de poses)")
-                    mc_embed = gr.HTML("")
-                    mc_url.change(lambda u: drive_embed(u, 180), mc_url, mc_embed)
-
-            with gr.Row():
-                mc_model  = gr.Dropdown(list(KLING_MODELS.keys()), value=list(KLING_MODELS.keys())[0], label="Modelo")
-                mc_orient = gr.Dropdown(
-                    ["Frente","Perfil Izquierdo","Perfil Derecho","Espalda"],
-                    value="Frente", label="Orientación del Personaje",
-                )
-                mc_audio  = gr.Checkbox(label="Conservar audio del video de referencia", value=False)
-
-            mc_prompt = gr.Textbox(label="Prompt (opcional)", lines=2,
-                                   placeholder="Ej: natural walking motion, smooth movement, cinematic")
-            btn_motion = gr.Button("▶  ANIMAR PERSONAJE", variant="primary")
-            mc_result  = gr.Video(label="Video Animado")
-
-            with gr.Accordion("GUARDAR EN REGISTRO", open=False):
-                with gr.Row():
-                    mc_reg_id   = gr.Textbox(label="ID Video")
-                    mc_reg_user = gr.Textbox(label="Miembro", value="Mateo")
-                    mc_reg_mm   = gr.Dropdown(["Mateo","Miguel"], label="Mateo / Miguel", value="Mateo")
-                    mc_reg_est  = gr.Dropdown(list(ESTILOS.keys()), label="Estilo")
-                mc_reg_pv  = gr.Textbox(label="Prompt Video (auto)", lines=2)
-                mc_reg_lv  = gr.Textbox(label="URL Video Generado (auto)", elem_classes=["result-url"])
-                mc_reg_lo  = gr.Textbox(label="URL Video de Movimiento (auto)")
-                mc_reg_pi  = gr.Textbox(label="Prompt Imagen (opcional)", lines=2)
-                mc_reg_li  = gr.Textbox(label="URL Imagen del Personaje (opcional)")
-                btn_mc_reg = gr.Button("GUARDAR EN REGISTRO", variant="primary")
-                mc_reg_st  = gr.Textbox(label="Estado", interactive=False)
-
-            def _motion_wrap(img, url, model, prompt, orient, audio, key):
-                result = do_motion(img, url, model, prompt, orient, audio, key)
-                return result, result
-
-            btn_motion.click(
-                _motion_wrap,
-                [mc_img, mc_url, mc_model, mc_prompt, mc_orient, mc_audio, api_key_st],
-                [mc_result, mc_reg_lv],
-            ).then(
-                lambda p, u: (p, u),
-                [mc_prompt, mc_url],
-                [mc_reg_pv, mc_reg_lo],
-            )
-
-            btn_mc_reg.click(
-                send_registro,
-                [mc_reg_id, mc_reg_user, mc_reg_mm, mc_reg_est,
-                 mc_reg_pi, mc_reg_li, mc_reg_pv, mc_reg_lv, mc_reg_lo],
-                mc_reg_st,
-            )
-
-        # ── 05  EDITAR ───────────────────────────────────────────────────────
-        with gr.Tab("05  EDITAR"):
+        # ── 04  EDITAR ───────────────────────────────────────────────────────
+        with gr.Tab("04  EDITAR"):
             ed_src_r = gr.Radio(
                 ["Archivo Local", "URL de Drive / Web"],
                 value="URL de Drive / Web", label="Fuente",

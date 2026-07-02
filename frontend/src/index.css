@@ -2751,10 +2751,35 @@ body {
 /* Sombra que se encoge al saltar y crece al aterrizar */
 @keyframes rabbitShadow {
   0%   { width: 60%; opacity: 0.5; }
-  10%  { width: 68%; opacity: 0.6; }   /* squash */
-  35%  { width: 30%; opacity: 0.15; }  /* en el aire */
-  42%  { width: 25%; opacity: 0.10; }  /* cima */
-  62%  { width: 70%; opacity: 0.65; }  /* aterrizaje */
-  75%  { width: 40%; opacity: 0.3; }   /* rebote */
+  10%  { width: 68%; opacity: 0.6; }
+  35%  { width: 30%; opacity: 0.15; }
+  42%  { width: 25%; opacity: 0.10; }
+  62%  { width: 70%; opacity: 0.65; }
+  75%  { width: 40%; opacity: 0.3; }
   100% { width: 60%; opacity: 0.5; }
+}
+
+/* ── Battery shimmer animation ──────────────────────────────────── */
+@keyframes batt-sweep {
+  0%   { left: -50%; }
+  100% { left: 130%; }
+}
+
+@keyframes batt-glow {
+  0%, 100% { box-shadow: 0 0 4px rgba(34,197,94,0.3); }
+  50%       { box-shadow: 0 0 10px rgba(34,197,94,0.7), 0 0 20px rgba(34,197,94,0.2); }
+}
+
+.batt-fill {
+  animation: batt-glow 2.5s ease-in-out infinite;
+}
+
+.batt-shimmer {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  animation: batt-sweep 2s ease-in-out infinite;
+  border-radius: 2px;
+  pointer-events: none;
 }
